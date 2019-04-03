@@ -1,0 +1,7 @@
+# RCSB_UTILS_STRUCT HISTORY
+
+  3-Apr-2019  - V0.10 Package created
+
+
+
+
