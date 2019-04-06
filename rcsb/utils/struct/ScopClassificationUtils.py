@@ -42,8 +42,11 @@ class ScopClassificationUtils:
         return self.__version
 
     def getScopSunIds(self, pdbId, authAsymId):
+        """
+         aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
+        """
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['sunids']
+            return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -51,7 +54,7 @@ class ScopClassificationUtils:
 
     def getScopDomainNames(self, pdbId, authAsymId):
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['domains']
+            return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -59,7 +62,7 @@ class ScopClassificationUtils:
 
     def getScopResidueRanges(self, pdbId, authAsymId):
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['ranges']
+            return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -183,10 +186,15 @@ class ScopClassificationUtils:
             if fields[1] in ['cl', 'cf', 'sf', 'fa', 'dm']:
                 nD[int(fields[0])] = str(fields[4]).strip()
         logger.debug("Length of name dictionary %d" % len(nD))
+        nD[0] = 'root' if 0 not in nD else nD[0]
+
         return nD
 
     def __extractAssignments(self, claL):
         """
+        returns:
+
+            aD[sunId] = [(), ... ]
         From dir.cla.scope.2.07-2019-03-07.txt:
 
         # dir.cla.scope.txt
@@ -208,36 +216,50 @@ class ScopClassificationUtils:
 
         """
         dmD = {}
+        logger.info("Length of class list %d" % len(claL))
+        rng = rngL = tL = None
         for fields in claL:
-            rngL = fields[2].split(',')
-            # dmTupL = [(tt[0], tt[1]) for tt in for rng.split(":") in rngL]
-            #
-            dmTupL = []
-            for rng in rngL:
-                tL = rng.split(':')
-                tt = (tL[0], tL[1]) if len(tL) > 1 and len(tL[1]) else (tL[0], None)
-                dmTupL.append(tt)
-            #
-            dmD[int(fields[4])] = (fields[1], [tt[0] for tt in dmTupL], [tt[1] for tt in dmTupL], fields[0])
+            try:
+                rngL = str(fields[2]).strip().split(',')
+                # dmTupL = [(tt[0], tt[1]) for tt in for rng.split(":") in rngL]
+                #
+                dmTupL = []
+                for rng in rngL:
+                    tL = [t for t in str(rng).strip().split(':') if len(t)]
+                    if len(tL) > 1:
+                        rL = tL[1].split('-')
+                        tt = (tL[0], rL[0], rL[1])
+                    else:
+                        tt = (tL[0], None, None)
+
+                    dmTupL.append(tt)
+                #
+                dmD[int(fields[4])] = (fields[1], dmTupL, fields[0])
+                #
+            except Exception as e:
+                logger.exception("Failing fields %r rngL %r rng %r tL %r with %s" % (fields, rngL, rng, tL, str(e)))
 
         #
         #
-        logger.debug("Length of domain assignments %d" % len(dmD))
+        logger.info("Length of domain assignments %d" % len(dmD))
         return dmD
 
     def __buildAssignments(self, dmD):
         """
             Input internal data structure with domain assignments -
 
-            dmD[sunId] = (pdbId, [authAsymId,...], ['authSeqIdBeg-authSeqIdEnd',...], domain_name)
+            dmD[sunId] = (pdbId, [(authAsymId, begRes, endRes), ...], domain_name)
+
+            Returns:
+
+               aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
+
 
         """
         pdbD = {}
         for sunId, dTup in dmD.items():
-            for ii, authAsymId in enumerate(dTup[1]):
-                pdbD.setdefault((dTup[0], authAsymId), {}).setdefault('domains', []).append(dTup[3])
-                pdbD.setdefault((dTup[0], authAsymId), {}).setdefault('sunids', []).append(sunId)
-                pdbD.setdefault((dTup[0], authAsymId), {}).setdefault('ranges', []).append(dTup[2][ii])
+            for rTup in dTup[1]:
+                pdbD.setdefault((dTup[0], rTup[0]), []).append((sunId, dTup[2], rTup))
         return pdbD
 
     def __extractHierarchy(self, hieL):

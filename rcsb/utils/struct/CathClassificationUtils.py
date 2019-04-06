@@ -39,8 +39,10 @@ class CathClassificationUtils:
         #
 
     def getCathVersions(self, pdbId, authAsymId):
+        """aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
+        """
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['version']
+            return list(set([tup[3] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -48,7 +50,7 @@ class CathClassificationUtils:
 
     def getCathIds(self, pdbId, authAsymId):
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['cathids']
+            return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -56,7 +58,7 @@ class CathClassificationUtils:
 
     def getCathDomainNames(self, pdbId, authAsymId):
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['domains']
+            return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -64,7 +66,7 @@ class CathClassificationUtils:
 
     def getCathResidueRanges(self, pdbId, authAsymId):
         try:
-            return self.__pdbD[(pdbId, authAsymId)]['ranges']
+            return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -190,14 +192,10 @@ class CathClassificationUtils:
             109mA00 v4_2_0 1.10.490.10 0-153:A
             10gsA01 v4_2_0 3.40.30.10 2-78:A,187-208:A
 
-            rngL = fields[2].split(',')
-            dmTupL = []
-            for rng in rngL:
-                tL = rng.split(':')
-                tt = (tL[0], tL[1]) if len(tL) > 1 and len(tL[1]) else (tL[0], None)
-                dmTupL.append(tt)
             #
-            dmD[int(fields[4])] = (fields[1], [tt[0] for tt in dmTupL], [tt[1] for tt in dmTupL], fields[0])
+            Returns:
+
+            dD[domainId] = (cathId, [(authAsymId, resBeg, resEnd), ...], version)
 
         """
         dD = {}
@@ -211,9 +209,10 @@ class CathClassificationUtils:
                 dmTupL = []
                 for rng in rngL:
                     tL = rng.split(':')
-                    dmTupL.append((tL[1], tL[0]))
+                    rL = tL[0].split('-')
+                    dmTupL.append((tL[1], rL[0], rL[1]))
                 #
-                dD[ff[0]] = (ff[2], [tt[0] for tt in dmTupL], [tt[1] for tt in dmTupL], ff[1])
+                dD[ff[0]] = (ff[2], dmTupL, ff[1])
             except Exception:
                 logger.info("Failing for case %r: %r" % (ff, dm))
         return dD
@@ -222,17 +221,18 @@ class CathClassificationUtils:
         """
             Input internal data structure with domain assignments -
 
-            dD[domainId] = (cathId, authAsymIds, AuthRanges, version)
+            dD[domainId] = (cathId, rangelist, version)
 
+            Returns:
+
+          =
+             aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
         """
         pdbD = {}
         for domId, dTup in dD.items():
             pdbId = domId[:4]
-            for ii, authAsymId in enumerate(dTup[1]):
-                pdbD.setdefault((pdbId, authAsymId), {}).setdefault('cathids', []).append(dTup[0])
-                pdbD.setdefault((pdbId, authAsymId), {}).setdefault('domains', []).append(domId)
-                pdbD.setdefault((pdbId, authAsymId), {}).setdefault('ranges', []).append(dTup[2][ii])
-                pdbD.setdefault((pdbId, authAsymId), {}).setdefault('version', []).append(dTup[3])
+            for rTup in dTup[1]:
+                pdbD.setdefault((pdbId, rTup[0]), []).append((dTup[0], domId, rTup, dTup[2]))
         return pdbD
 
     def __exportTreeNodeList(self, nD):

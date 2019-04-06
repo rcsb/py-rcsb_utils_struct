@@ -47,7 +47,7 @@ class CathClassificationUtilsTests(unittest.TestCase):
         """
         try:
             ccu = CathClassificationUtils(cathDirPath=self.__workPath, useCache=False)
-            pdbIdL = [('4hrt', 'A'), ('4hrt', 'C'), ('4hrt', 'E'), ('4hrt', 'G'), ('1jwn', 'A'), ('1jwn', 'B'), ('1jwn', 'C'), ('1jwn', 'D')]
+            pdbIdL = [('10gs', 'A'), ('4hrt', 'A'), ('4hrt', 'C'), ('4hrt', 'E'), ('4hrt', 'G'), ('1jwn', 'A'), ('1jwn', 'B'), ('1jwn', 'C'), ('1jwn', 'D')]
             #
             for pdbTup in pdbIdL:
                 cathids = ccu.getCathIds(pdbTup[0], pdbTup[1])

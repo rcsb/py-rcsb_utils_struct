@@ -2,6 +2,7 @@
 
   3-Apr-2019  - V0.10 Package created
   5-Apr-2019  - V0.11 Incorporated SCOPe and CATH utilties and tests
+  6-Apr-2019  - V0.12 Deliver explicit residue ranges
 
 
 
