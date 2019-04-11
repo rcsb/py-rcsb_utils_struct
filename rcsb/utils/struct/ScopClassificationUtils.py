@@ -43,7 +43,11 @@ class ScopClassificationUtils:
 
     def getScopSunIds(self, pdbId, authAsymId):
         """
+         Get the sunid of the domain assignment for the assignment -
+
          aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
+
+         aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
         """
         try:
             return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
@@ -60,9 +64,17 @@ class ScopClassificationUtils:
 
         return []
 
+    def getScopSccsNames(self, pdbId, authAsymId):
+        try:
+            return list(set([tup[2] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+        except Exception as e:
+            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+
+        return []
+
     def getScopResidueRanges(self, pdbId, authAsymId):
         try:
-            return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3][0], tup[3][1], tup[3][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
 
@@ -122,7 +134,7 @@ class ScopClassificationUtils:
             #
             nD = self.__extractDescription(desL)
             dmD = self.__extractAssignments(claL)
-            pD = self.__extractHierarchy(hieL)
+            pD = self.__extractHierarchy(hieL, nD)
             pdbD = self.__buildAssignments(dmD)
             scopD = {'names': nD, "parents": pD, "assignments": pdbD}
             ok = self.__mU.doExport(scopDomainPath, scopD, format="pickle")
@@ -140,17 +152,17 @@ class ScopClassificationUtils:
         fn = 'dir.des.scope.%s.txt' % version
         url = os.path.join(urlTarget, fn)
         desL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.debug("Fetched URL is %s len %d" % (url, len(desL)))
+        logger.info("Fetched URL is %s len %d" % (url, len(desL)))
         #
         fn = 'dir.cla.scope.%s.txt' % version
         url = os.path.join(urlTarget, fn)
         claL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.debug("Fetched URL is %s len %d" % (url, len(claL)))
+        logger.info("Fetched URL is %s len %d" % (url, len(claL)))
         #
         fn = 'dir.hie.scope.%s.txt' % version
         url = os.path.join(urlTarget, fn)
         hieL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.debug("Fetched URL is %s len %d" % (url, len(hieL)))
+        logger.info("Fetched URL is %s len %d" % (url, len(hieL)))
         #
         return desL, claL, hieL
 
@@ -167,6 +179,7 @@ class ScopClassificationUtils:
         46458   sf      a.1.1   -       Globin-like
         46459   fa      a.1.1.1 -       Truncated hemoglobin
         46460   dm      a.1.1.1 -       Protozoan/bacterial hemoglobin
+
         116748  sp      a.1.1.1 -       Bacillus subtilis [TaxId: 1423]
         113449  px      a.1.1.1 d1ux8a_ 1ux8 A:
         46461   sp      a.1.1.1 -       Ciliate (Paramecium caudatum) [TaxId: 5885]
@@ -201,6 +214,8 @@ class ScopClassificationUtils:
         # SCOPe release 2.07 (2018-03-02, last updated 2019-03-07)  [File format version 1.02]
         # http://scop.berkeley.edu/
         # Copyright (c) 1994-2019 the SCOP and SCOPe authors; see http://scop.berkeley.edu/about
+        #
+        old_sunId                  sccs  sunid
         d1ux8a_ 1ux8    A:      a.1.1.1 113449  cl=46456,cf=46457,sf=46458,fa=46459,dm=46460,sp=116748,px=113449
         d1dlwa_ 1dlw    A:      a.1.1.1 14982   cl=46456,cf=46457,sf=46458,fa=46459,dm=46460,sp=46461,px=14982
         d1uvya_ 1uvy    A:      a.1.1.1 100068  cl=46456,cf=46457,sf=46458,fa=46459,dm=46460,sp=46461,px=100068
@@ -234,7 +249,14 @@ class ScopClassificationUtils:
 
                     dmTupL.append(tt)
                 #
-                dmD[int(fields[4])] = (fields[1], dmTupL, fields[0])
+                # Get the sid of the domain  -
+                #
+                sfL = str(fields[5]).strip().split(',')
+                dmfL = sfL[4].split('=')
+                dmf = int(dmfL[1])
+
+                #                                         old domid      sccs    sunid for domain assignment
+                dmD[int(fields[4])] = (fields[1], dmTupL, fields[0], fields[3], dmf)
                 #
             except Exception as e:
                 logger.exception("Failing fields %r rngL %r rng %r tL %r with %s" % (fields, rngL, rng, tL, str(e)))
@@ -248,21 +270,21 @@ class ScopClassificationUtils:
         """
             Input internal data structure with domain assignments -
 
-            dmD[sunId] = (pdbId, [(authAsymId, begRes, endRes), ...], domain_name)
+            dmD[sunId] = (pdbId, [(authAsymId, begRes, endRes), ...], domain_name, sccs, sid_domain_assigned)
 
             Returns:
 
-               aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
+               aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
 
 
         """
         pdbD = {}
         for sunId, dTup in dmD.items():
             for rTup in dTup[1]:
-                pdbD.setdefault((dTup[0], rTup[0]), []).append((sunId, dTup[2], rTup))
+                pdbD.setdefault((dTup[0], rTup[0]), []).append((dTup[4], dTup[2], dTup[3], rTup))
         return pdbD
 
-    def __extractHierarchy(self, hieL):
+    def __extractHierarchy(self, hieL, nD):
         """
         From dir.hie.scope.2.07-2019-03-07.txt:
 
@@ -281,10 +303,13 @@ class ScopClassificationUtils:
         logger.debug("Length of input hierarchy list %d" % len(hieL))
         for fields in hieL:
             chId = int(fields[0])
+            #
+            if chId not in nD:
+                continue
             pId = int(fields[1]) if fields[1].isdigit() else None
             pD[chId] = pId
         #
-        logger.debug("Length of parent dictionary %d" % len(pD))
+        logger.info("Length of domain parent dictionary %d" % len(pD))
         return pD
 
     def __exportTreeNodeList(self, nD, pD):
@@ -293,7 +318,7 @@ class ScopClassificationUtils:
         """
         #
         pL = [0]
-        logger.debug("nD %d pD %d" % (len(nD), len(pD)))
+        logger.info("nD %d pD %d" % (len(nD), len(pD)))
         # create child dictionary
         cD = {}
         for ctId, ptId in pD.items():

@@ -47,7 +47,7 @@ class ScopClassificationUtilsTests(unittest.TestCase):
 
         """
         try:
-            scu = ScopClassificationUtils(scopDirPath=self.__workPath, useCache=False)
+            scu = ScopClassificationUtils(scopDirPath=self.__workPath, scopTargetUrl=self.__workPath, useCache=False)
             self.assertEquals(scu.getScopName(58788), 'Designed proteins')
             self.assertEquals(scu.getNameLineage(58231), ['Peptides'])
             self.assertEquals(scu.getIdLineage(58231), [58231])
@@ -78,7 +78,7 @@ class ScopClassificationUtilsTests(unittest.TestCase):
             nL = scu.getTreeNodeList()
             logger.info("Node list length %d" % len(nL))
             logger.info("Nodes %r" % (nL[:20]))
-            self.assertGreaterEqual(len(nL), 50000)
+            self.assertGreaterEqual(len(nL), 22100)
         except Exception as e:
             logger.exception("Failing with %s" % str(e))
             self.fail()

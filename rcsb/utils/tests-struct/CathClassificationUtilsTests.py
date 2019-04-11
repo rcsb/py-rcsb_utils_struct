@@ -66,6 +66,7 @@ class CathClassificationUtilsTests(unittest.TestCase):
         """
         try:
             ccu = CathClassificationUtils(cathDirPath=self.__workPath, useCache=True)
+            logger.info("Cath name for 1.10.490.10 %s " % ccu.getCathName('1.10.490.10'))
             nL = ccu.getTreeNodeList()
             logger.info("Node list length %d" % len(nL))
             logger.info("Nodes %r" % (nL[:20]))
