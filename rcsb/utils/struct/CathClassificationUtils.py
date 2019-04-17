@@ -283,7 +283,8 @@ class CathClassificationUtils:
             ff = tId.split('.')
             lL = ['.'.join(ff[0:jj]) for jj in range(1, len(ff) + 1)]
             #
-            d = {'id': tId, 'name': displayName, 'lineage': lL, 'parents': [ptId], 'depth': len(lL)}
+            #d = {'id': tId, 'name': displayName, 'lineage': lL, 'parents': [ptId], 'depth': len(lL)}
+            d = {'id': tId, 'name': displayName, 'parents': [ptId], 'depth': len(lL)}
             dL.append(d)
 
         return dL
