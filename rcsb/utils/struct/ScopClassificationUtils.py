@@ -347,8 +347,11 @@ class ScopClassificationUtils:
             ptId = pD[tId] if tId in pD else None
             lL = self.getIdLineage(tId)
             #
-            #d = {'id': str(tId), 'name': displayName, 'lineage': [str(t) for t in lL], 'parents': [str(ptId)], 'depth': len(lL)}
-            d = {'id': str(tId), 'name': displayName, 'parents': [str(ptId)], 'depth': len(lL)}
+            # d = {'id': str(tId), 'name': displayName, 'lineage': [str(t) for t in lL], 'parents': [str(ptId)], 'depth': len(lL)}
+            if tId == 0:
+                d = {'id': str(tId), 'name': displayName, 'depth': 0}
+            else:
+                d = {'id': str(tId), 'name': displayName, 'parents': [str(ptId)], 'depth': len(lL)}
             dL.append(d)
 
         return dL
