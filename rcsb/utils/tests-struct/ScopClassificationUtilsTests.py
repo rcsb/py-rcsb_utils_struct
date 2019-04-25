@@ -77,7 +77,7 @@ class ScopClassificationUtilsTests(unittest.TestCase):
             scu = ScopClassificationUtils(scopDirPath=self.__workPath, useCache=True)
             nL = scu.getTreeNodeList()
             logger.info("Node list length %d" % len(nL))
-            logger.info("Nodes %r" % (nL[:20]))
+            logger.info("Nodes %r" % (nL[:30]))
             self.assertGreaterEqual(len(nL), 22100)
         except Exception as e:
             logger.exception("Failing with %s" % str(e))

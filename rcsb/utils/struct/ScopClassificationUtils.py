@@ -3,7 +3,7 @@
 #  Date:           3-Apr-2019 jdw
 #
 #  Updated:
-#
+#  24-Apr-2019  jdw Exclude the root node from the exported tree node list
 ##
 """
   Extract SCOPe assignments, term descriptions and SCOP classifications
@@ -315,9 +315,12 @@ class ScopClassificationUtils:
     def __exportTreeNodeList(self, nD, pD):
         """ Create node list from the SCOPe (sunid) parent and name/description dictionaries.
 
+            Exclude the root node from the tree.
+
         """
         #
-        pL = [0]
+        rootId = 0
+        pL = [rootId]
         logger.info("nD %d pD %d" % (len(nD), len(pD)))
         # create child dictionary
         cD = {}
@@ -345,10 +348,12 @@ class ScopClassificationUtils:
         for tId in idL:
             displayName = nD[tId] if tId in nD else None
             ptId = pD[tId] if tId in pD else None
-            lL = self.getIdLineage(tId)
+            lL = self.getIdLineage(tId)[1:]
             #
             # d = {'id': str(tId), 'name': displayName, 'lineage': [str(t) for t in lL], 'parents': [str(ptId)], 'depth': len(lL)}
-            if tId == 0:
+            if tId == rootId:
+                continue
+            elif ptId == rootId:
                 d = {'id': str(tId), 'name': displayName, 'depth': 0}
             else:
                 d = {'id': str(tId), 'name': displayName, 'parents': [str(ptId)], 'depth': len(lL)}

@@ -6,6 +6,7 @@
  10-Apr-2019  - V0.13 Simplify SCOP parent tree to named nodes, add sccs to data payload
  16-Apr-2019    V0.14 Cast all types in tree node lists to string and remove lineage
  17-Apr-2019    V0.15 Adjust parent node attributes
+ 24-Apr-2019    V0.16 Exclude synthetic SCOP root node from export tree node list
 
 
 
