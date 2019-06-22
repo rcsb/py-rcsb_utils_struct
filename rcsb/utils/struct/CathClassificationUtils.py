@@ -28,7 +28,7 @@ class CathClassificationUtils:
 
     def __init__(self, **kwargs):
         #
-        self.__cathDirPath = kwargs.get("cathDirPath", '.')
+        self.__cathDirPath = kwargs.get("cathDirPath", ".")
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
         #
@@ -44,7 +44,7 @@ class CathClassificationUtils:
         try:
             return list(set([tup[3] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -52,7 +52,7 @@ class CathClassificationUtils:
         try:
             return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -60,7 +60,7 @@ class CathClassificationUtils:
         try:
             return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -68,7 +68,7 @@ class CathClassificationUtils:
         try:
             return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -76,22 +76,22 @@ class CathClassificationUtils:
         try:
             return self.__nD[cathId]
         except Exception:
-            logger.debug("Undefined CATH id %r" % cathId)
+            logger.debug("Undefined CATH id %r", cathId)
         return None
 
     def getIdLineage(self, cathId):
         try:
-            ff = cathId.split('.')
-            return ['.'.join(ff[0:jj]) for jj in range(1, len(ff) + 1)]
+            ff = cathId.split(".")
+            return [".".join(ff[0:jj]) for jj in range(1, len(ff) + 1)]
         except Exception:
-            logger.debug("No lineage for bad CATH id %r" % cathId)
+            logger.debug("No lineage for bad CATH id %r", cathId)
         return None
 
     def getNameLineage(self, cathId):
         try:
             return [self.getCathName(cId) for cId in self.getIdLineage(cathId)]
         except Exception as e:
-            logger.exception("Failing with %s" % str(e))
+            logger.exception("Failing with %s", str(e))
         return None
 
     def getTreeNodeList(self):
@@ -104,21 +104,24 @@ class CathClassificationUtils:
         # cathDomainPath = os.path.join(cathDirPath, "cath_domains.json")
         #
         if useCache and self.__mU.exists(cathDomainPath):
-            sD = self.__mU.doImport(cathDomainPath, format="pickle")
-            logger.debug("Cath domain length %d" % len(sD))
-            nD = sD['names']
-            pdbD = sD['assignments']
+            sD = self.__mU.doImport(cathDomainPath, fmt="pickle")
+            logger.debug("Cath domain length %d", len(sD))
+            nD = sD["names"]
+            pdbD = sD["assignments"]
 
         else:
-            logger.info("Fetch CATH name and domain assignment data from source %s" % urlTarget)
+            logger.info("Fetch CATH name and domain assignment data from source %s", urlTarget)
             nmL, dmL = self.__fetchFromSource(urlTarget)
             #
+            ok = False
+            minLen = 1000
             nD = self.__extractNames(nmL)
             dD = self.__extractDomainAssignments(dmL)
             pdbD = self.__buildAssignments(dD)
-            sD = {'names': nD, "assignments": pdbD}
-            ok = self.__mU.doExport(cathDomainPath, sD, format='pickle')
-            logger.debug("Cache save status %r" % ok)
+            sD = {"names": nD, "assignments": pdbD}
+            if (len(nD) > minLen) and (len(dD) > minLen):
+                ok = self.__mU.doExport(cathDomainPath, sD, fmt="pickle")
+            logger.debug("Cache save status %r", ok)
             #
         return nD, pdbD
 
@@ -128,13 +131,13 @@ class CathClassificationUtils:
              http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-all.gz
              http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-names.gz
         """
-        fn = 'cath-b-newest-names.gz'
+        fn = "cath-b-newest-names.gz"
         url = os.path.join(urlTarget, fn)
-        nmL = self.__mU.doImport(url, format='list', uncomment=True)
+        nmL = self.__mU.doImport(url, fmt="list", uncomment=True)
         #
-        fn = 'cath-b-newest-all.gz'
+        fn = "cath-b-newest-all.gz"
         url = os.path.join(urlTarget, fn)
-        dmL = self.__mU.doImport(url, format='list', uncomment=True)
+        dmL = self.__mU.doImport(url, fmt="list", uncomment=True)
         #
         return nmL, dmL
 
@@ -164,9 +167,9 @@ class CathClassificationUtils:
             2.102 3-layer Sandwich
         """
         rD = {}
-        logger.info("length of input name list %d" % len(nmL))
+        logger.info("length of input name list %d", len(nmL))
         for nm in nmL:
-            ff = nm.split(' ')
+            ff = nm.split(" ")
             rD[ff[0]] = " ".join(ff[1:])
         return rD
 
@@ -199,22 +202,22 @@ class CathClassificationUtils:
 
         """
         dD = {}
-        logger.info("length of input domain assignment list %d" % len(dmL))
+        logger.info("length of input domain assignment list %d", len(dmL))
         for dm in dmL:
             #
             try:
-                ff = dm.split(' ')
+                ff = dm.split(" ")
                 #
-                rngL = ff[3].split(',')
+                rngL = ff[3].split(",")
                 dmTupL = []
                 for rng in rngL:
-                    tL = rng.split(':')
-                    rL = tL[0].split('-')
+                    tL = rng.split(":")
+                    rL = tL[0].split("-")
                     dmTupL.append((tL[1], rL[0], rL[1]))
                 #
                 dD[ff[0]] = (ff[2], dmTupL, ff[1])
             except Exception:
-                logger.info("Failing for case %r: %r" % (ff, dm))
+                logger.info("Failing for case %r: %r", ff, dm)
         return dD
 
     def __buildAssignments(self, dD):
@@ -244,22 +247,22 @@ class CathClassificationUtils:
         pL = []
         pD = {}
         for tId in nD:
-            ff = tId.split('.')
+            ff = tId.split(".")
             if len(ff) == 1:
                 ptId = None
                 pL.append(tId)
             else:
-                ptId = '.'.join(ff[:-1])
-            logger.debug("tId %s parent %s" % (tId, ptId))
+                ptId = ".".join(ff[:-1])
+            logger.debug("tId %s parent %s", tId, ptId)
             pD[tId] = ptId
         #
-        logger.info("nD %d pD %d" % (len(nD), len(pD)))
+        logger.info("nD %d pD %d", len(nD), len(pD))
         # create child dictionary
         cD = {}
         for ctId, ptId in pD.items():
             cD.setdefault(ptId, []).append(ctId)
         #
-        logger.info("cD %d" % len(cD))
+        logger.info("cD %d", len(cD))
         #
         idL = []
         for rootId in sorted(pL):
@@ -269,7 +272,7 @@ class CathClassificationUtils:
                 tId = queue.popleft()
                 idL.append(tId)
                 if tId not in cD:
-                    # logger.debug("No children for CATH tId %s" % tId)
+                    # logger.debug("No children for CATH tId %s", tId)
                     continue
                 for childId in cD[tId]:
                     if childId not in visited:
@@ -280,14 +283,14 @@ class CathClassificationUtils:
         for tId in idL:
             displayName = nD[tId]
             ptId = pD[tId]
-            ff = tId.split('.')
-            lL = ['.'.join(ff[0:jj]) for jj in range(1, len(ff) + 1)]
+            ff = tId.split(".")
+            lL = [".".join(ff[0:jj]) for jj in range(1, len(ff) + 1)]
             #
             # d = {'id': tId, 'name': displayName, 'lineage': lL, 'parents': [ptId], 'depth': len(lL)}
             if len(lL) == 1:
-                d = {'id': tId, 'name': displayName, 'depth': 0}
+                dD = {"id": tId, "name": displayName, "depth": 0}
             else:
-                d = {'id': tId, 'name': displayName, 'parents': [ptId], 'depth': len(lL) - 1}
-            dL.append(d)
+                dD = {"id": tId, "name": displayName, "parents": [ptId], "depth": len(lL) - 1}
+            dL.append(dD)
 
         return dL

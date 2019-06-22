@@ -29,16 +29,16 @@ class ScopClassificationUtils:
 
     def __init__(self, **kwargs):
         #
-        self.__scopDirPath = kwargs.get("scopDirPath", '.')
+        self.__scopDirPath = kwargs.get("scopDirPath", ".")
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
-        self.__version = kwargs.get('scopVersion', '2.07-2019-03-07')
+        self.__version = kwargs.get("scopVersion", "2.07-2019-03-07")
         #
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)
         #
 
-    def getScopVersion(self, pdbId, authAsymId):
+    def getScopVersion(self):
         return self.__version
 
     def getScopSunIds(self, pdbId, authAsymId):
@@ -52,7 +52,7 @@ class ScopClassificationUtils:
         try:
             return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -60,7 +60,7 @@ class ScopClassificationUtils:
         try:
             return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -68,7 +68,7 @@ class ScopClassificationUtils:
         try:
             return list(set([tup[2] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -76,7 +76,7 @@ class ScopClassificationUtils:
         try:
             return [(tup[0], tup[1], tup[2], tup[3][0], tup[3][1], tup[3][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
         except Exception as e:
-            logger.debug("Failing for %r %r with %s" % (pdbId, authAsymId, str(e)))
+            logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
         return []
 
@@ -84,7 +84,7 @@ class ScopClassificationUtils:
         try:
             return self.__nD[sunId]
         except Exception:
-            logger.debug("Undefined SCOP sunId %r" % sunId)
+            logger.debug("Undefined SCOP sunId %r", sunId)
         return None
 
     def getIdLineage(self, sunId):
@@ -92,11 +92,11 @@ class ScopClassificationUtils:
         try:
             pList.append(sunId)
             pt = self.__pD[sunId]
-            while ((pt is not None) and (pt != 0)):
+            while (pt is not None) and (pt != 0):
                 pList.append(pt)
                 pt = self.__pD[pt]
         except Exception as e:
-            logger.exception("Failing for %r with %s" % (sunId, str(e)))
+            logger.exception("Failing for %r with %s", sunId, str(e))
         #
         pList.reverse()
         return pList
@@ -105,7 +105,7 @@ class ScopClassificationUtils:
         try:
             return [self.getScopName(cId) for cId in self.getIdLineage(sunId)]
         except Exception as e:
-            logger.exception("Failing for %r with %s" % (sunId, str(e)))
+            logger.exception("Failing for %r with %s", sunId, str(e))
         return None
 
     def getTreeNodeList(self):
@@ -122,47 +122,51 @@ class ScopClassificationUtils:
         # scopDomainPath = os.path.join(scopDirPath, "scop_domains.json")
         #
         if useCache and self.__mU.exists(scopDomainPath):
-            sD = self.__mU.doImport(scopDomainPath, format="pickle")
-            logger.debug("SCOPe name length %d parent length %d assignments %d" % (len(sD['names']), len(sD['parents']), len(sD['assignments'])))
-            nD = sD['names']
-            pD = sD['parents']
-            pdbD = sD['assignments']
+            sD = self.__mU.doImport(scopDomainPath, fmt="pickle")
+            logger.debug("SCOPe name length %d parent length %d assignments %d", len(sD["names"]), len(sD["parents"]), len(sD["assignments"]))
+            nD = sD["names"]
+            pD = sD["parents"]
+            pdbD = sD["assignments"]
 
         else:
-            logger.info("Fetch SCOPe name and domain assignment data from source %s" % urlTarget)
+            ok = False
+            minLen = 1000
+            logger.info("Fetch SCOPe name and domain assignment data using target URL %s", urlTarget)
             desL, claL, hieL = self.__fetchFromSource(urlTarget, version=version)
             #
             nD = self.__extractDescription(desL)
             dmD = self.__extractAssignments(claL)
             pD = self.__extractHierarchy(hieL, nD)
             pdbD = self.__buildAssignments(dmD)
-            scopD = {'names': nD, "parents": pD, "assignments": pdbD}
-            ok = self.__mU.doExport(scopDomainPath, scopD, format="pickle")
-            logger.debug("Cache save status %r" % ok)
+            logger.info("nD %d dmD %d pD %d", len(nD), len(dmD), len(pD))
+            scopD = {"names": nD, "parents": pD, "assignments": pdbD}
+            if (len(nD) > minLen) and (len(pD) > minLen) and (len(pD) > minLen):
+                ok = self.__mU.doExport(scopDomainPath, scopD, fmt="pickle")
+            logger.debug("Cache save status %r", ok)
             #
         return nD, pD, pdbD
 
-    def __fetchFromSource(self, urlTarget, version='2.07-2019-03-07'):
+    def __fetchFromSource(self, urlTarget, version="2.07-2019-03-07"):
         """  Fetch the classification names and domain assignments from SCOPe repo.
         #
                 dir.des.scope.2.07-2019-03-07.txt
                 dir.cla.scope.2.07-2019-03-07.txt
                 dir.hie.scope.2.07-2019-03-07.txt
         """
-        fn = 'dir.des.scope.%s.txt' % version
+        fn = "dir.des.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        desL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.info("Fetched URL is %s len %d" % (url, len(desL)))
+        desL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        logger.info("Fetched URL is %s len %d", url, len(desL))
         #
-        fn = 'dir.cla.scope.%s.txt' % version
+        fn = "dir.cla.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        claL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.info("Fetched URL is %s len %d" % (url, len(claL)))
+        claL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        logger.info("Fetched URL is %s len %d", url, len(claL))
         #
-        fn = 'dir.hie.scope.%s.txt' % version
+        fn = "dir.hie.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        hieL = self.__mU.doImport(url, format='tdd', rowFormat='list', uncomment=True)
-        logger.info("Fetched URL is %s len %d" % (url, len(hieL)))
+        hieL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        logger.info("Fetched URL is %s len %d", url, len(hieL))
         #
         return desL, claL, hieL
 
@@ -196,10 +200,10 @@ class ScopClassificationUtils:
         nD = {}
 
         for fields in desL:
-            if fields[1] in ['cl', 'cf', 'sf', 'fa', 'dm']:
+            if fields[1] in ["cl", "cf", "sf", "fa", "dm"]:
                 nD[int(fields[0])] = str(fields[4]).strip()
-        logger.debug("Length of name dictionary %d" % len(nD))
-        nD[0] = 'root' if 0 not in nD else nD[0]
+        logger.debug("Length of name dictionary %d", len(nD))
+        nD[0] = "root" if 0 not in nD else nD[0]
 
         return nD
 
@@ -231,18 +235,18 @@ class ScopClassificationUtils:
 
         """
         dmD = {}
-        logger.info("Length of class list %d" % len(claL))
+        logger.info("Length of class list %d", len(claL))
         rng = rngL = tL = None
         for fields in claL:
             try:
-                rngL = str(fields[2]).strip().split(',')
+                rngL = str(fields[2]).strip().split(",")
                 # dmTupL = [(tt[0], tt[1]) for tt in for rng.split(":") in rngL]
                 #
                 dmTupL = []
                 for rng in rngL:
-                    tL = [t for t in str(rng).strip().split(':') if len(t)]
+                    tL = [t for t in str(rng).strip().split(":") if len(t)]
                     if len(tL) > 1:
-                        rL = tL[1].split('-')
+                        rL = tL[1].split("-")
                         tt = (tL[0], rL[0], rL[1])
                     else:
                         tt = (tL[0], None, None)
@@ -251,19 +255,19 @@ class ScopClassificationUtils:
                 #
                 # Get the sid of the domain  -
                 #
-                sfL = str(fields[5]).strip().split(',')
-                dmfL = sfL[4].split('=')
+                sfL = str(fields[5]).strip().split(",")
+                dmfL = sfL[4].split("=")
                 dmf = int(dmfL[1])
 
                 #                                         old domid      sccs    sunid for domain assignment
                 dmD[int(fields[4])] = (fields[1], dmTupL, fields[0], fields[3], dmf)
                 #
             except Exception as e:
-                logger.exception("Failing fields %r rngL %r rng %r tL %r with %s" % (fields, rngL, rng, tL, str(e)))
+                logger.exception("Failing fields %r rngL %r rng %r tL %r with %s", fields, rngL, rng, tL, str(e))
 
         #
         #
-        logger.info("Length of domain assignments %d" % len(dmD))
+        logger.info("Length of domain assignments %d", len(dmD))
         return dmD
 
     def __buildAssignments(self, dmD):
@@ -279,7 +283,7 @@ class ScopClassificationUtils:
 
         """
         pdbD = {}
-        for sunId, dTup in dmD.items():
+        for _, dTup in dmD.items():
             for rTup in dTup[1]:
                 pdbD.setdefault((dTup[0], rTup[0]), []).append((dTup[4], dTup[2], dTup[3], rTup))
         return pdbD
@@ -300,7 +304,7 @@ class ScopClassificationUtils:
 
         """
         pD = {}
-        logger.debug("Length of input hierarchy list %d" % len(hieL))
+        logger.debug("Length of input hierarchy list %d", len(hieL))
         for fields in hieL:
             chId = int(fields[0])
             #
@@ -309,7 +313,7 @@ class ScopClassificationUtils:
             pId = int(fields[1]) if fields[1].isdigit() else None
             pD[chId] = pId
         #
-        logger.info("Length of domain parent dictionary %d" % len(pD))
+        logger.info("Length of domain parent dictionary %d", len(pD))
         return pD
 
     def __exportTreeNodeList(self, nD, pD):
@@ -321,13 +325,13 @@ class ScopClassificationUtils:
         #
         rootId = 0
         pL = [rootId]
-        logger.info("nD %d pD %d" % (len(nD), len(pD)))
+        logger.info("nD %d pD %d", len(nD), len(pD))
         # create child dictionary
         cD = {}
         for ctId, ptId in pD.items():
             cD.setdefault(ptId, []).append(ctId)
         #
-        logger.debug("cD %d" % len(cD))
+        logger.debug("cD %d", len(cD))
         #
         idL = []
         for rootId in sorted(pL):
@@ -337,7 +341,7 @@ class ScopClassificationUtils:
                 tId = queue.popleft()
                 idL.append(tId)
                 if tId not in cD:
-                    # logger.warning("No children for scop tId %r" % tId)
+                    # logger.warning("No children for scop tId %r", tId)
                     continue
                 for childId in cD[tId]:
                     if childId not in visited:
@@ -354,9 +358,9 @@ class ScopClassificationUtils:
             if tId == rootId:
                 continue
             elif ptId == rootId:
-                d = {'id': str(tId), 'name': displayName, 'depth': 0}
+                dD = {"id": str(tId), "name": displayName, "depth": 0}
             else:
-                d = {'id': str(tId), 'name': displayName, 'parents': [str(ptId)], 'depth': len(lL)}
-            dL.append(d)
+                dD = {"id": str(tId), "name": displayName, "parents": [str(ptId)], "depth": len(lL)}
+            dL.append(dD)
 
         return dL
