@@ -1,5 +1,6 @@
 # RCSB Python Primary Structure Data Utilities
 
+[![Build Status](https://dev.azure.com/jdwestbrook/jdwestbrook/_apis/build/status/rcsb.py-rcsb_utils_struct?branchName=master)](https://dev.azure.com/jdwestbrook/jdwestbrook/_build/latest?definitionId=9&branchName=master)
 
 ## Introduction
 
