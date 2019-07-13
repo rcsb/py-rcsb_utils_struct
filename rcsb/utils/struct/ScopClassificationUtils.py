@@ -153,19 +153,20 @@ class ScopClassificationUtils:
                 dir.cla.scope.2.07-2019-03-07.txt
                 dir.hie.scope.2.07-2019-03-07.txt
         """
+        encoding = "utf-8-sig" if sys.version_info[0] > 2 else "ascii"
         fn = "dir.des.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        desL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        desL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True, encoding=encoding)
         logger.info("Fetched URL is %s len %d", url, len(desL))
         #
         fn = "dir.cla.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        claL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        claL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True, encoding=encoding)
         logger.info("Fetched URL is %s len %d", url, len(claL))
         #
         fn = "dir.hie.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
-        hieL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True)
+        hieL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True, encoding=encoding)
         logger.info("Fetched URL is %s len %d", url, len(hieL))
         #
         return desL, claL, hieL
