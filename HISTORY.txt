@@ -8,4 +8,4 @@
  17-Apr-2019    V0.15 Adjust parent node attributes
  24-Apr-2019    V0.16 Exclude synthetic SCOP root node from export tree node list
  22-Jun-2019    V0.17 Update development workflow
- 13-Jun-2019    V0.17 Improve Py27 character encoding compatibility
+ 13-Jun-2019    V0.18 Improve Py27 character encoding compatibility
