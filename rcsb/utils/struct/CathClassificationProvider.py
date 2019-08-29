@@ -1,5 +1,5 @@
 ##
-#  File:  CathClassificationUtils.py
+#  File:  CathClassificationProvider.py
 #  Date:  3-Apr-2019 jdw
 #
 #  Updates:
@@ -21,7 +21,7 @@ from rcsb.utils.io.MarshalUtil import MarshalUtil
 logger = logging.getLogger(__name__)
 
 
-class CathClassificationUtils:
+class CathClassificationProvider(object):
     """ Extract CATH domain assignments, term descriptions and CATH classification hierarchy
         from CATH flat files.
     """
@@ -32,11 +32,15 @@ class CathClassificationUtils:
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
         #
-
-        #
         self.__mU = MarshalUtil(workPath=self.__cathDirPath)
         self.__nD, self.__pdbD = self.__reload(urlTarget, self.__cathDirPath, useCache=useCache)
         #
+
+    def testCache(self):
+        logger.info("Lengths nD %d pdbD %d", len(self.__nD), len(self.__pdbD))
+        if (len(self.__nD) > 100) and (len(self.__pdbD) > 5000):
+            return True
+        return False
 
     def getCathVersions(self, pdbId, authAsymId):
         """aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
@@ -100,6 +104,7 @@ class CathClassificationUtils:
     def __reload(self, urlTarget, cathDirPath, useCache=True):
         pyVersion = sys.version_info[0]
         cathDomainPath = os.path.join(cathDirPath, "cath_domains-py%s.pic" % str(pyVersion))
+        self.__mU.mkdir(cathDirPath)
         #
         # cathDomainPath = os.path.join(cathDirPath, "cath_domains.json")
         #

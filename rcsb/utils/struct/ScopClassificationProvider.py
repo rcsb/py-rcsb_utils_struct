@@ -1,5 +1,5 @@
 ##
-#  File:           ScopClassificationUtils.py
+#  File:           ScopClassificationProvider.py
 #  Date:           3-Apr-2019 jdw
 #
 #  Updated:
@@ -21,7 +21,7 @@ from rcsb.utils.io.MarshalUtil import MarshalUtil
 logger = logging.getLogger(__name__)
 
 
-class ScopClassificationUtils:
+class ScopClassificationProvider(object):
     """ Extract SCOPe assignments, term descriptions and SCOP classifications
         from SCOP flat files.
 
@@ -32,11 +32,17 @@ class ScopClassificationUtils:
         self.__scopDirPath = kwargs.get("scopDirPath", ".")
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
-        self.__version = kwargs.get("scopVersion", "2.07-2019-03-07")
+        self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")
         #
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)
         #
+
+    def testCache(self):
+        logger.info("Lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
+        if (len(self.__nD) > 100) and (len(self.__pD) > 100) and (len(self.__pdbD) > 100):
+            return True
+        return False
 
     def getScopVersion(self):
         return self.__version
@@ -118,6 +124,7 @@ class ScopClassificationUtils:
     def __reload(self, urlTarget, scopDirPath, useCache=True, version=None):
         pyVersion = sys.version_info[0]
         scopDomainPath = os.path.join(scopDirPath, "scop_domains-py%s.pic" % str(pyVersion))
+        self.__mU.mkdir(scopDirPath)
         #
         # scopDomainPath = os.path.join(scopDirPath, "scop_domains.json")
         #
@@ -146,7 +153,7 @@ class ScopClassificationUtils:
             #
         return nD, pD, pdbD
 
-    def __fetchFromSource(self, urlTarget, version="2.07-2019-03-07"):
+    def __fetchFromSource(self, urlTarget, version="2.07-2019-07-23"):
         """  Fetch the classification names and domain assignments from SCOPe repo.
         #
                 dir.des.scope.2.07-2019-03-07.txt

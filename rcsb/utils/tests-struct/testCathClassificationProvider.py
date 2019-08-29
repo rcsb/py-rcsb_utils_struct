@@ -1,5 +1,5 @@
 ##
-# File:    CathClassificationUtilsTests.py
+# File:    CathClassificationProviderTests.py
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
@@ -16,7 +16,7 @@ import time
 import unittest
 
 from rcsb.utils.struct import __version__
-from rcsb.utils.struct.CathClassificationUtils import CathClassificationUtils
+from rcsb.utils.struct.CathClassificationProvider import CathClassificationProvider
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(HERE))
@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(mo
 logger = logging.getLogger()
 
 
-class CathClassificationUtilsTests(unittest.TestCase):
+class CathClassificationProviderTests(unittest.TestCase):
     def setUp(self):
         self.__dirPath = os.path.join(os.path.dirname(TOPDIR), "rcsb", "mock-data")
         self.__workPath = os.path.join(HERE, "test-output")
@@ -42,7 +42,7 @@ class CathClassificationUtilsTests(unittest.TestCase):
         """ Load latest CATH data
         """
         try:
-            ccu = CathClassificationUtils(cathDirPath=self.__workPath, useCache=False)
+            ccu = CathClassificationProvider(cathDirPath=self.__workPath, useCache=False)
             pdbIdL = [("10gs", "A"), ("4hrt", "A"), ("4hrt", "C"), ("4hrt", "E"), ("4hrt", "G"), ("1jwn", "A"), ("1jwn", "B"), ("1jwn", "C"), ("1jwn", "D")]
             #
             for pdbTup in pdbIdL:
@@ -61,7 +61,7 @@ class CathClassificationUtilsTests(unittest.TestCase):
         """ Test dictionary methods --
         """
         try:
-            ccu = CathClassificationUtils(cathDirPath=self.__workPath, useCache=True)
+            ccu = CathClassificationProvider(cathDirPath=self.__workPath, useCache=True)
             logger.info("Cath name for 1.10.490.10 %s ", ccu.getCathName("1.10.490.10"))
             nL = ccu.getTreeNodeList()
             logger.info("Node list length %d", len(nL))
@@ -73,8 +73,8 @@ class CathClassificationUtilsTests(unittest.TestCase):
 
 def readCathData():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(CathClassificationUtilsTests("testGetCathData"))
-    suiteSelect.addTest(CathClassificationUtilsTests("testCathClassificationAccessMethods"))
+    suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
+    suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
     return suiteSelect
 
 

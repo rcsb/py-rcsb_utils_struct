@@ -1,5 +1,5 @@
 ##
-# File:    ScopClassificationUtilsTests.py
+# File:    ScopClassificationProviderTests.py
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
@@ -16,7 +16,7 @@ import time
 import unittest
 
 from rcsb.utils.struct import __version__
-from rcsb.utils.struct.ScopClassificationUtils import ScopClassificationUtils
+from rcsb.utils.struct.ScopClassificationProvider import ScopClassificationProvider
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(HERE))
@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(mo
 logger = logging.getLogger()
 
 
-class ScopClassificationUtilsTests(unittest.TestCase):
+class ScopClassificationProviderTests(unittest.TestCase):
     def setUp(self):
         self.__dirPath = os.path.join(os.path.dirname(TOPDIR), "rcsb", "mock-data")
         self.__workPath = os.path.join(HERE, "test-output")
@@ -40,12 +40,12 @@ class ScopClassificationUtilsTests(unittest.TestCase):
 
     def testGetScopData(self):
         """ Load latest scop data and test accessors
-
         """
-
         try:
-            cacheLocalFilePath = os.path.join(self.__dirPath, "domains_struct")
-            scu = ScopClassificationUtils(scopDirPath=self.__workPath, scopTargetUrl=cacheLocalFilePath, useCache=False)
+            # cacheLocalFilePath = os.path.join(self.__dirPath, "domains_struct")
+            # scu = ScopClassificationProvider(scopDirPath=self.__workPath, scopTargetUrl=cacheLocalFilePath, useCache=False)
+            dirPath = os.path.join(self.__workPath, "domains_struct")
+            scu = ScopClassificationProvider(scopDirPath=dirPath, useCache=False)
             self.assertEqual(scu.getScopName(58788), "Designed proteins")
             self.assertEqual(scu.getNameLineage(58231), ["Peptides"])
             self.assertEqual(scu.getIdLineage(58231), [58231])
@@ -72,7 +72,7 @@ class ScopClassificationUtilsTests(unittest.TestCase):
         """ Test Scop tree node list generation --
         """
         try:
-            scu = ScopClassificationUtils(scopDirPath=self.__workPath, useCache=True)
+            scu = ScopClassificationProvider(scopDirPath=self.__workPath, useCache=True)
             nL = scu.getTreeNodeList()
             logger.debug("Node list length %d", len(nL))
             logger.debug("Nodes %r", nL[:30])
@@ -84,8 +84,8 @@ class ScopClassificationUtilsTests(unittest.TestCase):
 
 def readScopData():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(ScopClassificationUtilsTests("testGetScopData"))
-    suiteSelect.addTest(ScopClassificationUtilsTests("testScopClassificationAccessMethods"))
+    suiteSelect.addTest(ScopClassificationProviderTests("testGetScopData"))
+    suiteSelect.addTest(ScopClassificationProviderTests("testScopClassificationAccessMethods"))
     return suiteSelect
 
 
