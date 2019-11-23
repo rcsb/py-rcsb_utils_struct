@@ -11,3 +11,4 @@
  13-Jun-2019    V0.18 Improve Py27 character encoding compatibility
  14-Aug-2019    V0.19 Adjust cache management
  29-Aug-2019    V0.20 Add ScopClassificationProvider() and CathClassificationProvider()
+ 23-Nov-2019    V0.21 Move pipeline to py38
