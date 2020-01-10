@@ -15,6 +15,8 @@ import collections
 import logging
 import os.path
 import sys
+from datetime import datetime
+from datetime import timedelta
 
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
@@ -31,9 +33,10 @@ class CathClassificationProvider(object):
         self.__cathDirPath = kwargs.get("cathDirPath", ".")
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
+        urlFallbackTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/archive")
         #
         self.__mU = MarshalUtil(workPath=self.__cathDirPath)
-        self.__nD, self.__pdbD = self.__reload(urlTarget, self.__cathDirPath, useCache=useCache)
+        self.__nD, self.__pdbD = self.__reload(urlTarget, urlFallbackTarget, self.__cathDirPath, useCache=useCache)
         #
 
     def testCache(self):
@@ -101,7 +104,7 @@ class CathClassificationProvider(object):
     def getTreeNodeList(self):
         return self.__exportTreeNodeList(self.__nD)
 
-    def __reload(self, urlTarget, cathDirPath, useCache=True):
+    def __reload(self, urlTarget, urlFallbackTarget, cathDirPath, useCache=True):
         pyVersion = sys.version_info[0]
         cathDomainPath = os.path.join(cathDirPath, "cath_domains-py%s.pic" % str(pyVersion))
         self.__mU.mkdir(cathDirPath)
@@ -115,11 +118,11 @@ class CathClassificationProvider(object):
             pdbD = sD["assignments"]
 
         else:
-            logger.info("Fetch CATH name and domain assignment data from source %s", urlTarget)
-            nmL, dmL = self.__fetchFromSource(urlTarget)
+            minLen = 1000
+            logger.info("Fetch CATH name and domain assignment data from primary data source %s", urlTarget)
+            nmL, dmL = self.__fetchFromSource(urlTarget, urlFallbackTarget, minLen)
             #
             ok = False
-            minLen = 1000
             nD = self.__extractNames(nmL)
             dD = self.__extractDomainAssignments(dmL)
             pdbD = self.__buildAssignments(dD)
@@ -130,19 +133,38 @@ class CathClassificationProvider(object):
             #
         return nD, pdbD
 
-    def __fetchFromSource(self, urlTarget):
+    def __fetchFromSource(self, urlTarget, urlFallbackTarget, minLen):
         """  Fetch the classification names and domain assignments from CATH repo.
 
              http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-all.gz
              http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-names.gz
+             #
+             http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-all.gz
+             http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-names-all.gz
         """
         fn = "cath-b-newest-names.gz"
         url = os.path.join(urlTarget, fn)
         nmL = self.__mU.doImport(url, fmt="list", uncomment=True)
         #
+        if not nmL or len(nmL) < minLen:
+            dS = datetime.today().strftime("%Y%m%d")
+            dS = datetime.strftime(datetime.now() - timedelta(1), "%Y%m%d")
+            fn = "cath-b-%s-names-all.gz" % dS
+            url = os.path.join(urlFallbackTarget, fn)
+            logger.info("Using fallback resource for %s", fn)
+            nmL = self.__mU.doImport(url, fmt="list", uncomment=True)
+        #
         fn = "cath-b-newest-all.gz"
         url = os.path.join(urlTarget, fn)
         dmL = self.__mU.doImport(url, fmt="list", uncomment=True)
+        #
+        if not dmL or len(dmL) < minLen:
+            dS = datetime.today().strftime("%Y%m%d")
+            dS = datetime.strftime(datetime.now() - timedelta(1), "%Y%m%d")
+            fn = "cath-b-%s-all.gz" % dS
+            url = os.path.join(urlFallbackTarget, fn)
+            logger.info("Using fallback resource for %s", fn)
+            dmL = self.__mU.doImport(url, fmt="list", uncomment=True)
         #
         return nmL, dmL
 
