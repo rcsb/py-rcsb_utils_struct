@@ -13,3 +13,4 @@
  29-Aug-2019    V0.20 Add ScopClassificationProvider() and CathClassificationProvider()
  23-Nov-2019    V0.21 Move pipeline to py38
  10-Jan-2020    V0.22 Add fallback data source targets for CATH
+ 28-Jan-2020    V0.23 Increment the SCOPe version
