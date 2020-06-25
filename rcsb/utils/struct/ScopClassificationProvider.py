@@ -33,7 +33,8 @@ class ScopClassificationProvider(object):
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
         # self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")
-        self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
+        #self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
+        self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
         #
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)

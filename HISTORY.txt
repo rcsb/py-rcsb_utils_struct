@@ -15,3 +15,4 @@
  10-Jan-2020    V0.22 Add fallback data source targets for CATH
  28-Jan-2020    V0.23 Increment the SCOPe version
   3-Feb-2020    V0.24 Update dependencies
+ 25-Jun-2020    V0.25 Increment the SCOPe version
