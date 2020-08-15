@@ -16,3 +16,4 @@
  28-Jan-2020    V0.23 Increment the SCOPe version
   3-Feb-2020    V0.24 Update dependencies
  25-Jun-2020    V0.25 Increment the SCOPe version
+ 15-Aug-2020    V0.26 Add failover backup for CATH cache data

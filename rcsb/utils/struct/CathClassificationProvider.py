@@ -18,6 +18,7 @@ import sys
 from datetime import datetime
 from datetime import timedelta
 
+from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 logger = logging.getLogger(__name__)
@@ -34,9 +35,15 @@ class CathClassificationProvider(object):
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
         urlFallbackTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/archive")
+        # no trailing /
+        urlBackupPath = kwargs.get("cathUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/CATH")
         #
         self.__mU = MarshalUtil(workPath=self.__cathDirPath)
         self.__nD, self.__pdbD = self.__reload(urlTarget, urlFallbackTarget, self.__cathDirPath, useCache=useCache)
+        if not self.testCache():
+            ok = self.__fetchFromBackup(urlBackupPath, self.__cathDirPath)
+            if ok:
+                self.__nD, self.__pdbD = self.__reload(urlTarget, urlFallbackTarget, self.__cathDirPath, useCache=True)
         #
 
     def testCache(self):
@@ -104,9 +111,14 @@ class CathClassificationProvider(object):
     def getTreeNodeList(self):
         return self.__exportTreeNodeList(self.__nD)
 
-    def __reload(self, urlTarget, urlFallbackTarget, cathDirPath, useCache=True):
+    def __getCathDomainFileName(self):
         pyVersion = sys.version_info[0]
-        cathDomainPath = os.path.join(cathDirPath, "cath_domains-py%s.pic" % str(pyVersion))
+        fn = "cath_domains-py%s.pic" % str(pyVersion)
+        return fn
+
+    def __reload(self, urlTarget, urlFallbackTarget, cathDirPath, useCache=True):
+        fn = self.__getCathDomainFileName()
+        cathDomainPath = os.path.join(cathDirPath, fn)
         self.__mU.mkdir(cathDirPath)
         #
         # cathDomainPath = os.path.join(cathDirPath, "cath_domains.json")
@@ -132,6 +144,17 @@ class CathClassificationProvider(object):
             logger.debug("Cache save status %r", ok)
             #
         return nD, pdbD
+
+    def __fetchFromBackup(self, urlBackupPath, cathDirPath):
+        fn = self.__getCathDomainFileName()
+        cathDomainPath = os.path.join(cathDirPath, fn)
+        self.__mU.mkdir(cathDirPath)
+        #
+        backupUrl = urlBackupPath + "/" + fn
+        logger.info("Using backup URL %r", backupUrl)
+        fU = FileUtil()
+        ok = fU.get(backupUrl, cathDomainPath)
+        return ok
 
     def __fetchFromSource(self, urlTarget, urlFallbackTarget, minLen):
         """  Fetch the classification names and domain assignments from CATH repo.

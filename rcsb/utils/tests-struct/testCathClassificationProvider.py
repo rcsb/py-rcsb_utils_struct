@@ -27,7 +27,6 @@ logger = logging.getLogger()
 
 class CathClassificationProviderTests(unittest.TestCase):
     def setUp(self):
-        self.__dirPath = os.path.join(os.path.dirname(TOPDIR), "rcsb", "mock-data")
         self.__workPath = os.path.join(HERE, "test-output")
         #
         self.__startTime = time.time()
