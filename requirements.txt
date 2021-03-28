@@ -1,1 +1,1 @@
-rcsb.utils.io >= 0.69
+rcsb.utils.io >= 1.00
