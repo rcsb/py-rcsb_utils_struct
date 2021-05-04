@@ -18,3 +18,4 @@
  25-Jun-2020    V0.25 Increment the SCOPe version
  15-Aug-2020    V0.26 Add failover backup for CATH cache data
  28-Mar-2021    V0.27 Update dependencies and CI pipeline
+  4-May-2021    V0.28 Add fallback options for ScopClassificationProvider()

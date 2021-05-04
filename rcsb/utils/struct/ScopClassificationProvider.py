@@ -16,14 +16,15 @@ import logging
 import os.path
 import sys
 
+from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
 
 logger = logging.getLogger(__name__)
 
 
 class ScopClassificationProvider(object):
-    """ Extract SCOPe assignments, term descriptions and SCOP classifications
-        from SCOP flat files.
+    """Extract SCOPe assignments, term descriptions and SCOP classifications
+    from SCOP flat files.
 
     """
 
@@ -36,9 +37,15 @@ class ScopClassificationProvider(object):
         # self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
         self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
         #
+        urlBackupPath = kwargs.get("scopUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP")
+        #
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)
         #
+        if not self.testCache():
+            ok = self.__fetchFromBackup(urlBackupPath, self.__scopDirPath)
+            if ok:
+                self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=True, version=self.__version)
 
     def testCache(self):
         logger.info("Lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
@@ -46,16 +53,28 @@ class ScopClassificationProvider(object):
             return True
         return False
 
+    def __fetchFromBackup(self, urlBackupPath, scopDirPath):
+        pyVersion = sys.version_info[0]
+        fn = "scop_domains-py%s.pic" % str(pyVersion)
+        scopDomainPath = os.path.join(scopDirPath, fn)
+        self.__mU.mkdir(scopDirPath)
+        #
+        backupUrl = urlBackupPath + "/" + fn
+        logger.info("Using backup URL %r", backupUrl)
+        fU = FileUtil()
+        ok = fU.get(backupUrl, scopDomainPath)
+        return ok
+
     def getScopVersion(self):
         return self.__version
 
     def getScopSunIds(self, pdbId, authAsymId):
         """
-         Get the sunid of the domain assignment for the assignment -
+        Get the sunid of the domain assignment for the assignment -
 
-         aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
+        aD[(pdbId, authAsymId)] = [(sunId, domainId, (authAsymId, resBeg, resEnd))]
 
-         aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
+        aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
         """
         try:
             return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
@@ -156,7 +175,7 @@ class ScopClassificationProvider(object):
         return nD, pD, pdbD
 
     def __fetchFromSource(self, urlTarget, version="2.07-2019-07-23"):
-        """  Fetch the classification names and domain assignments from SCOPe repo.
+        """Fetch the classification names and domain assignments from SCOPe repo.
         #
                 dir.des.scope.2.07-2019-03-07.txt
                 dir.cla.scope.2.07-2019-03-07.txt
@@ -282,13 +301,13 @@ class ScopClassificationProvider(object):
 
     def __buildAssignments(self, dmD):
         """
-            Input internal data structure with domain assignments -
+        Input internal data structure with domain assignments -
 
-            dmD[sunId] = (pdbId, [(authAsymId, begRes, endRes), ...], domain_name, sccs, sid_domain_assigned)
+        dmD[sunId] = (pdbId, [(authAsymId, begRes, endRes), ...], domain_name, sccs, sid_domain_assigned)
 
-            Returns:
+        Returns:
 
-               aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
+           aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
 
 
         """
@@ -327,9 +346,9 @@ class ScopClassificationProvider(object):
         return pD
 
     def __exportTreeNodeList(self, nD, pD):
-        """ Create node list from the SCOPe (sunid) parent and name/description dictionaries.
+        """Create node list from the SCOPe (sunid) parent and name/description dictionaries.
 
-            Exclude the root node from the tree.
+        Exclude the root node from the tree.
 
         """
         #
