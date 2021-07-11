@@ -26,10 +26,19 @@ logger = logging.getLogger(__name__)
 class EcodClassificationProvider(object):
     """Extract ECOD domain assignments, term descriptions and ECOD classification hierarchy
     from ECOD flat files.
+
+    http://prodata.swmed.edu/ecod/
+
+    See:
+    H. Cheng, R. D. Schaeffer, Y. Liao, L. N. Kinch, J. Pei, S. Shi, B. H. Kim, N. V. Grishin. (2014)
+    ECOD: An evolutionary classification of protein domains. PLoS Comput Biol 10(12): e1003926.
+
+    Linking details:  http://prodata.swmed.edu/ecod/complete/domain/<domainId>
+
+                      http://prodata.swmed.edu/ecod/complete/domain/e6sl5G1
     """
 
-    # Linking details:
-    # http://prodata.swmed.edu/ecod/complete/domain/e6sl5G1
+    #
     # --
     def __init__(self, cachePath, useCache, **kwargs):
         self.__cachePath = cachePath
@@ -38,7 +47,7 @@ class EcodClassificationProvider(object):
         self.__version = None
         #
         urlTarget = kwargs.get("ecodTargetUrl", "http://prodata.swmed.edu/ecod/distributions/ecod.latest.domains.txt")
-        urlBackup = kwargs.get("ecodUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/ecod.latest.domains.txt.gz")
+        urlBackup = kwargs.get("ecodUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/ECOD/ecod.latest.domains.txt.gz")
         #
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__pD, self.__nD, self.__ntD, self.__pdbD = self.__reload(urlTarget, urlBackup, self.__dirPath, useCache=useCache)
@@ -56,6 +65,13 @@ class EcodClassificationProvider(object):
     def getFamilyIds(self, pdbId, authAsymId):
         try:
             return list(set([tup[1] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
+        except Exception as e:
+            logger.exception("Failing for %r %r with %s", pdbId, authAsymId, str(e))
+        return []
+
+    def getDomainIds(self, pdbId, authAsymId):
+        try:
+            return list(set([tup[0] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.exception("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
@@ -146,7 +162,6 @@ class EcodClassificationProvider(object):
                 nmL = self.__fetchFromSource(urlBackup)
             #
             logger.info("ECOD raw file length (%d)", len(nmL))
-
             ok = False
             pD, nD, ntD, pdbD = self.__extractDomainHierarchy(nmL)
             #
