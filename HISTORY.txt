@@ -20,3 +20,4 @@
  28-Mar-2021    V0.27 Update dependencies and CI pipeline
   4-May-2021    V0.28 Add fallback options for ScopClassificationProvider()
   7-May-2021    V0.29 Update SCOP version
+ 10-Jul-2021    V0.30 Add SCOP2/B and ECOD provider modules and associated tests
