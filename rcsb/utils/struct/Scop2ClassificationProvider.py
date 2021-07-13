@@ -47,7 +47,7 @@ class Scop2ClassificationProvider(object):
         #
 
     def testCache(self):
-        logger.info("Lengths nD %d pD %d", len(self.__nD), len(self.__pD))
+        logger.info("Lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
         if (len(self.__nD) > 9000) and (len(self.__pD) > 70000):
             return True
         return False
@@ -87,14 +87,14 @@ class Scop2ClassificationProvider(object):
     def getFamilyResidueRanges(self, pdbId, authAsymId):
         try:
             # s/fD.setdefault((pdbId, authAsymId), []).append((domSuperFamilyId, authAsymId, authSeqBeg, authSeqEnd))
-            return [(tup[2], tup[3], tup[4]) for tup in self.__fD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__fD[(pdbId.upper(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyResidueRanges(self, pdbId, authAsymId):
         try:
-            return [(tup[2], tup[3], tup[4]) for tup in self.__sfD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sfD[(pdbId.upper(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
@@ -115,7 +115,7 @@ class Scop2ClassificationProvider(object):
 
     def getSuperFamilyResidueRanges2B(self, pdbId, authAsymId):
         try:
-            return [(tup[2], tup[3], tup[4]) for tup in self.__sf2bD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sf2bD[(pdbId.upper(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []

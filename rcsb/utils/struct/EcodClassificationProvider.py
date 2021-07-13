@@ -53,7 +53,7 @@ class EcodClassificationProvider(object):
         self.__pD, self.__nD, self.__ntD, self.__pdbD = self.__reload(urlTarget, urlBackup, self.__dirPath, useCache=useCache)
 
     def testCache(self):
-        logger.info("Lengths nD %d pdbD %d", len(self.__nD), len(self.__pdbD))
+        logger.info("ECOD Lengths nD %d pdbD %d", len(self.__nD), len(self.__pdbD))
         if (len(self.__nD) > 100) and (len(self.__pdbD) > 5000):
             return True
         return False
@@ -86,7 +86,7 @@ class EcodClassificationProvider(object):
     def getFamilyResidueRanges(self, pdbId, authAsymId):
         try:
             # pdbD.setdefault((pdbId, authAsymId), []).append((domId, fId, authAsymId, authSeqBeg, authSeqEnd))
-            return [(tup[2], tup[3], tup[4]) for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
