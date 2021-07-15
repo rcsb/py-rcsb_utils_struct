@@ -19,11 +19,12 @@ import sys
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class Scop2ClassificationProvider(object):
+class Scop2ClassificationProvider(StashableBase):
     """Extract SCOP2 domain assignments, term descriptions and SCOP classification hierarchy
     from SCOP and SCOP2B flat files.
     """
@@ -32,8 +33,10 @@ class Scop2ClassificationProvider(object):
         #
         _ = kwargs
         self.__cachePath = cachePath
-        self.__dirPath = os.path.join(self.__cachePath, "scop2")
+        dirName = "scop2"
+        self.__dirPath = os.path.join(self.__cachePath, dirName)
         self.__useCache = useCache
+        super(Scop2ClassificationProvider, self).__init__(self.__cachePath, [dirName])
         #
         self.__version = "latest"
         self.__fmt = "pickle"

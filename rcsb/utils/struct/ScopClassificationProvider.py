@@ -18,11 +18,12 @@ import sys
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class ScopClassificationProvider(object):
+class ScopClassificationProvider(StashableBase):
     """Extract SCOPe assignments, term descriptions and SCOP classifications
     from SCOP flat files.
 
@@ -30,7 +31,15 @@ class ScopClassificationProvider(object):
 
     def __init__(self, **kwargs):
         #
-        self.__scopDirPath = kwargs.get("scopDirPath", ".")
+        self.__dirName = "scop"
+        if "cachePath" in kwargs:
+            self.__cachePath = os.path.abspath(kwargs.get("cachePath", None))
+            self.__scopDirPath = os.path.join(self.__cachePath, self.__dirName)
+        else:
+            self.__scopDirPath = kwargs.get("scopDirPath", ".")
+            self.__cachePath, self.__dirName = os.path.split(os.path.abspath(self.__scopDirPath))
+        super(ScopClassificationProvider, self).__init__(self.__cachePath, [self.__dirName])
+        #
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
         # self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")

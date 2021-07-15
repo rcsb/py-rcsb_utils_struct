@@ -3,7 +3,7 @@
 #  Date:  3-Apr-2019 jdw
 #
 #  Updates:
-#
+#  15-Jul-2021 jdw Update the constructor to common provider API conventions
 ##
 """
   Extract CATH domain assignments, term descriptions and CATH classification hierarchy
@@ -20,18 +20,27 @@ from datetime import timedelta
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class CathClassificationProvider(object):
-    """ Extract CATH domain assignments, term descriptions and CATH classification hierarchy
-        from CATH flat files.
+class CathClassificationProvider(StashableBase):
+    """Extract CATH domain assignments, term descriptions and CATH classification hierarchy
+    from CATH flat files.
     """
 
     def __init__(self, **kwargs):
         #
-        self.__cathDirPath = kwargs.get("cathDirPath", ".")
+        self.__dirName = "cath"
+        if "cachePath" in kwargs:
+            self.__cachePath = os.path.abspath(kwargs.get("cachePath", None))
+            self.__cathDirPath = os.path.join(self.__cachePath, self.__dirName)
+        else:
+            self.__cathDirPath = kwargs.get("cathDirPath", ".")
+            self.__cachePath, self.__dirName = os.path.split(os.path.abspath(self.__cathDirPath))
+        super(CathClassificationProvider, self).__init__(self.__cachePath, [self.__dirName])
+        #
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
         urlFallbackTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/archive")
@@ -53,8 +62,7 @@ class CathClassificationProvider(object):
         return False
 
     def getCathVersions(self, pdbId, authAsymId):
-        """aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
-        """
+        """aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]"""
         try:
             return list(set([tup[3] for tup in self.__pdbD[(pdbId, authAsymId)]]))
         except Exception as e:
@@ -157,13 +165,13 @@ class CathClassificationProvider(object):
         return ok
 
     def __fetchFromSource(self, urlTarget, urlFallbackTarget, minLen):
-        """  Fetch the classification names and domain assignments from CATH repo.
+        """Fetch the classification names and domain assignments from CATH repo.
 
-             http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-all.gz
-             http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-names.gz
-             #
-             http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-all.gz
-             http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-names-all.gz
+        http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-all.gz
+        http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-names.gz
+        #
+        http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-all.gz
+        http://download.cathdb.info/cath/releases/daily-release/archive/cath-b-yyyymmdd-names-all.gz
         """
         fn = "cath-b-newest-names.gz"
         url = os.path.join(urlTarget, fn)
@@ -272,14 +280,14 @@ class CathClassificationProvider(object):
 
     def __buildAssignments(self, dD):
         """
-            Input internal data structure with domain assignments -
+          Input internal data structure with domain assignments -
 
-            dD[domainId] = (cathId, rangelist, version)
+          dD[domainId] = (cathId, rangelist, version)
 
-            Returns:
+          Returns:
 
-          =
-             aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
+        =
+           aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]
         """
         pdbD = {}
         for domId, dTup in dD.items():
@@ -289,9 +297,7 @@ class CathClassificationProvider(object):
         return pdbD
 
     def __exportTreeNodeList(self, nD):
-        """ Create node list from name dictionary and lineage dictionaries.
-
-        """
+        """Create node list from name dictionary and lineage dictionaries."""
         # create parent dictionary
         #
         pL = []

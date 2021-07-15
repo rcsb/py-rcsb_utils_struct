@@ -28,6 +28,7 @@ logger = logging.getLogger()
 class CathClassificationProviderTests(unittest.TestCase):
     def setUp(self):
         self.__workPath = os.path.join(HERE, "test-output")
+        self.__cachePath = os.path.join(self.__workPath, "CACHE")
         #
         self.__startTime = time.time()
         logger.debug("Running tests on version %s", __version__)
@@ -38,10 +39,9 @@ class CathClassificationProviderTests(unittest.TestCase):
         logger.debug("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testGetCathData(self):
-        """ Load latest CATH data
-        """
+        """Load latest CATH data"""
         try:
-            ccu = CathClassificationProvider(cathDirPath=self.__workPath, useCache=False)
+            ccu = CathClassificationProvider(cachePath=self.__cachePath, useCache=False)
             pdbIdL = [("10gs", "A"), ("4hrt", "A"), ("4hrt", "C"), ("4hrt", "E"), ("4hrt", "G"), ("1jwn", "A"), ("1jwn", "B"), ("1jwn", "C"), ("1jwn", "D")]
             #
             for pdbTup in pdbIdL:
@@ -57,10 +57,9 @@ class CathClassificationProviderTests(unittest.TestCase):
             self.fail()
 
     def testCathClassificationAccessMethods(self):
-        """ Test dictionary methods --
-        """
+        """Test dictionary methods --"""
         try:
-            ccu = CathClassificationProvider(cathDirPath=self.__workPath, useCache=True)
+            ccu = CathClassificationProvider(cachePath=self.__cachePath, useCache=True)
             logger.info("Cath name for 1.10.490.10 %s ", ccu.getCathName("1.10.490.10"))
             nL = ccu.getTreeNodeList()
             logger.info("Node list length %d", len(nL))

@@ -1,7 +1,7 @@
 # RCSB_UTILS_STRUCT HISTORY
 
   3-Apr-2019  - V0.10 Package created
-  5-Apr-2019  - V0.11 Incorporated SCOPe and CATH utilties and tests
+  5-Apr-2019  - V0.11 Incorporated SCOPe and CATH utilities and tests
   6-Apr-2019  - V0.12 Deliver explicit residue ranges
  10-Apr-2019  - V0.13 Simplify SCOP parent tree to named nodes, add sccs to data payload
  16-Apr-2019    V0.14 Cast all types in tree node lists to string and remove lineage
@@ -22,3 +22,4 @@
   7-May-2021    V0.29 Update SCOP version
  10-Jul-2021    V0.30 Add SCOP2/B and ECOD provider modules and associated tests
  13-Jul-2021    V0.31 Adjust returned values in get range methods for SCOP2/B and ECOD
+ 15-Jul-2021    V0.32 Unify on the common provider constructor API, make providers a subclass of rcsb.utils.io.StashableBase
