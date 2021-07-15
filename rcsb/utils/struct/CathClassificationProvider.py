@@ -125,6 +125,8 @@ class CathClassificationProvider(StashableBase):
         return fn
 
     def __reload(self, urlTarget, urlFallbackTarget, cathDirPath, useCache=True):
+        nD = {}
+        pdbD = {}
         fn = self.__getCathDomainFileName()
         cathDomainPath = os.path.join(cathDirPath, fn)
         self.__mU.mkdir(cathDirPath)
@@ -136,8 +138,7 @@ class CathClassificationProvider(StashableBase):
             logger.debug("Cath domain length %d", len(sD))
             nD = sD["names"]
             pdbD = sD["assignments"]
-
-        else:
+        elif not useCache:
             minLen = 1000
             logger.info("Fetch CATH name and domain assignment data from primary data source %s", urlTarget)
             nmL, dmL = self.__fetchFromSource(urlTarget, urlFallbackTarget, minLen)

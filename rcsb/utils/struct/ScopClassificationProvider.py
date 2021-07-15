@@ -52,7 +52,7 @@ class ScopClassificationProvider(StashableBase):
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)
         #
-        if not self.testCache():
+        if not useCache and not self.testCache():
             ok = self.__fetchFromBackup(urlBackupPath, self.__scopDirPath)
             if ok:
                 self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=True, version=self.__version)
@@ -153,6 +153,7 @@ class ScopClassificationProvider(StashableBase):
     ###
     #
     def __reload(self, urlTarget, scopDirPath, useCache=True, version=None):
+        nD = pD = pdbD = {}
         pyVersion = sys.version_info[0]
         scopDomainPath = os.path.join(scopDirPath, "scop_domains-py%s.pic" % str(pyVersion))
         self.__mU.mkdir(scopDirPath)
@@ -166,7 +167,7 @@ class ScopClassificationProvider(StashableBase):
             pD = sD["parents"]
             pdbD = sD["assignments"]
 
-        else:
+        elif not useCache:
             ok = False
             minLen = 1000
             logger.info("Fetch SCOPe name and domain assignment data using target URL %s", urlTarget)

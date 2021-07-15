@@ -43,7 +43,7 @@ class Scop2ClassificationProvider(StashableBase):
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
-        if not self.testCache():
+        if not useCache and not self.testCache():
             ok = self.__fetchFromBackup()
             if ok:
                 self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
@@ -173,6 +173,7 @@ class Scop2ClassificationProvider(StashableBase):
         return fn
 
     def __reload(self, useCache=True, fmt="json"):
+        nD = ntD = pD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         self.__mU.mkdir(self.__dirPath)
@@ -188,7 +189,7 @@ class Scop2ClassificationProvider(StashableBase):
             sfD = sD["superfamilies"]
             sf2bD = sD["superfamilies2b"]
 
-        else:
+        elif not useCache:
             nmL, dmL, scop2bL, _ = self.__fetchFromSource()
             #
             ok = False

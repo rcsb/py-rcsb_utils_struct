@@ -157,7 +157,7 @@ class EcodClassificationProvider(StashableBase):
             pD = sD["parents"]
             pdbD = sD["assignments"]
             self.__version = sD["version"]
-        else:
+        elif not useCache:
             minLen = 1000
             logger.info("Fetch ECOD name and domain assignment data from primary data source %s", urlTarget)
             nmL = self.__fetchFromSource(urlTarget)
