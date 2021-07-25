@@ -26,7 +26,7 @@ logger = logging.getLogger()
 
 class EcodClassificationProviderTests(unittest.TestCase):
     def setUp(self):
-        self.__workPath = os.path.join(HERE, "test-output", "CACHE")
+        self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
         #
         self.__startTime = time.time()
         logger.debug("Running tests on version %s", __version__)
@@ -39,7 +39,7 @@ class EcodClassificationProviderTests(unittest.TestCase):
     def testAGetEcodData(self):
         """Test ECOD data access methods"""
         try:
-            ecodP = EcodClassificationProvider(cachePath=self.__workPath, useCache=False)
+            ecodP = EcodClassificationProvider(cachePath=self.__cachePath, useCache=False)
 
             pdbIdL = [("4iqn", "C"), ("4gtl", "A"), ("4bt2", "A"), ("4hrt", "A"), ("1pca", "A"), ("1kn6", "A"), ("1jqg", "A")]
             #
@@ -73,7 +73,7 @@ class EcodClassificationProviderTests(unittest.TestCase):
     def testEcodTreeMethods(self):
         """Test ECOD tree methods --"""
         try:
-            ccu = EcodClassificationProvider(cachePath=self.__workPath, useCache=True)
+            ccu = EcodClassificationProvider(cachePath=self.__cachePath, useCache=True)
             nL = ccu.getTreeNodeList()
             logger.info("ECOD node list length %d", len(nL))
             self.assertGreaterEqual(len(nL), 20000)

@@ -27,8 +27,8 @@ logger = logging.getLogger()
 
 class Scop2ClassificationProviderTests(unittest.TestCase):
     def setUp(self):
-        self.__workPath = os.path.join(HERE, "test-output", "CACHE")
-        self.__treePath = os.path.join(self.__workPath, "scop2-tree.json")
+        self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
+        self.__treePath = os.path.join(self.__cachePath, "scop2-tree.json")
         #
         self.__startTime = time.time()
         logger.debug("Running tests on version %s", __version__)
@@ -41,7 +41,7 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
     def testAGetScop2Data(self):
         """Test SCOP2 data access methods"""
         try:
-            scp = Scop2ClassificationProvider(cachePath=self.__workPath, useCache=False)
+            scp = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=False)
 
             pdbIdL = [("1pyt", "A"), ("4hrt", "A"), ("1pca", "A"), ("1kn6", "A"), ("1jqg", "A")]
             #
@@ -88,7 +88,7 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
     def testGetScop2BData(self):
         """Test SCOP2B data access methods"""
         try:
-            scp = Scop2ClassificationProvider(cachePath=self.__workPath, useCache=True)
+            scp = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=True)
 
             pdbIdL = [("5oba", "B"), ("6s61", "X")]
             #
@@ -118,12 +118,12 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
     def testScop2TreeMethods(self):
         """Test SCOP2 tree methods --"""
         try:
-            ccu = Scop2ClassificationProvider(cachePath=self.__workPath, useCache=True)
+            ccu = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=True)
             nL = ccu.getTreeNodeList()
             self.assertGreaterEqual(len(nL), 75000)
             logger.debug("SCOP2 tree node list length %d", len(nL))
             logger.debug("SCOP2 tree Nodes %r", nL[:20])
-            mU = MarshalUtil(workPath=self.__workPath)
+            mU = MarshalUtil(workPath=self.__cachePath)
             mU.doExport(self.__treePath, nL, fmt="json", indent=3)
         except Exception as e:
             logger.exception("Failing with %s", str(e))
