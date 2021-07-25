@@ -50,7 +50,7 @@ class Scop2ClassificationProvider(StashableBase):
         #
 
     def testCache(self):
-        logger.info("Lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
+        logger.info("SCOP2 lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
         if (len(self.__nD) > 9000) and (len(self.__pD) > 70000):
             return True
         return False
@@ -235,8 +235,8 @@ class Scop2ClassificationProvider(StashableBase):
             https://scop.mrc-lmb.cam.ac.uk/files/scop-cla-latest.txt
 
         SIFTS extrapolated SCOP2 and SCOP2B assignments:
-            ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2b_sf_uniprot.tsv.gz
-            ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2_uniprot.tsv.gz
+            https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2b_sf_uniprot.tsv.gz
+            https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2_uniprot.tsv.gz
 
         """
         urlTargetScop2 = "https://scop.mrc-lmb.cam.ac.uk/files"
@@ -253,8 +253,8 @@ class Scop2ClassificationProvider(StashableBase):
         #
         headerLines = self.__mU.doImport(url, fmt="list", uncomment=False, encoding=encoding)
         self.__version = headerLines[0].split(" ")[3] if headerLines else "2021-05-27"
-        #
-        urlTargetSifts = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"
+        # JDW note cert issues with this site
+        urlTargetSifts = "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"
         fn = "pdb_chain_scop2b_sf_uniprot.tsv.gz"
         url = os.path.join(urlTargetSifts, fn)
         scop2bL = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)

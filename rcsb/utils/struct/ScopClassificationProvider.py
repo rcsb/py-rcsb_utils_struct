@@ -45,7 +45,7 @@ class ScopClassificationProvider(StashableBase):
         # self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
-        self.__version = kwargs.get("scopVersion", "2.07-2021-04-13")
+        self.__version = kwargs.get("scopVersion", "2.07-2021-07-07")
         #
         urlBackupPath = kwargs.get("scopUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP")
         #
@@ -58,7 +58,7 @@ class ScopClassificationProvider(StashableBase):
                 self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=True, version=self.__version)
 
     def testCache(self):
-        logger.info("Lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
+        logger.info("SCOP lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
         if (len(self.__nD) > 100) and (len(self.__pD) > 100) and (len(self.__pdbD) > 100):
             return True
         return False

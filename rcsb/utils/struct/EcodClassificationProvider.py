@@ -193,6 +193,7 @@ class EcodClassificationProvider(StashableBase):
             self.__version = ff[-1]
         #
         nmL = self.__mU.doImport(fp, fmt="list", uncomment=True)
+        fU.remove(fp)
         #
         return nmL
 

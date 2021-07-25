@@ -49,14 +49,14 @@ class CathClassificationProvider(StashableBase):
         #
         self.__mU = MarshalUtil(workPath=self.__cathDirPath)
         self.__nD, self.__pdbD = self.__reload(urlTarget, urlFallbackTarget, self.__cathDirPath, useCache=useCache)
-        if not self.testCache():
+        if not self.testCache() and not useCache:
             ok = self.__fetchFromBackup(urlBackupPath, self.__cathDirPath)
             if ok:
                 self.__nD, self.__pdbD = self.__reload(urlTarget, urlFallbackTarget, self.__cathDirPath, useCache=True)
         #
 
     def testCache(self):
-        logger.info("Lengths nD %d pdbD %d", len(self.__nD), len(self.__pdbD))
+        logger.info("CATH lengths nD %d pdbD %d", len(self.__nD), len(self.__pdbD))
         if (len(self.__nD) > 100) and (len(self.__pdbD) > 5000):
             return True
         return False
