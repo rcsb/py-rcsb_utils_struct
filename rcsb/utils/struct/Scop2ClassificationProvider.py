@@ -19,11 +19,12 @@ import sys
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class Scop2ClassificationProvider(object):
+class Scop2ClassificationProvider(StashableBase):
     """Extract SCOP2 domain assignments, term descriptions and SCOP classification hierarchy
     from SCOP and SCOP2B flat files.
     """
@@ -32,22 +33,24 @@ class Scop2ClassificationProvider(object):
         #
         _ = kwargs
         self.__cachePath = cachePath
-        self.__dirPath = os.path.join(self.__cachePath, "scop2")
+        dirName = "scop2"
+        self.__dirPath = os.path.join(self.__cachePath, dirName)
         self.__useCache = useCache
+        super(Scop2ClassificationProvider, self).__init__(self.__cachePath, [dirName])
         #
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
-        if not self.testCache():
+        if not useCache and not self.testCache():
             ok = self.__fetchFromBackup()
             if ok:
                 self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         #
 
     def testCache(self):
-        logger.info("Lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
+        logger.info("SCOP2 lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
         if (len(self.__nD) > 9000) and (len(self.__pD) > 70000):
             return True
         return False
@@ -170,6 +173,7 @@ class Scop2ClassificationProvider(object):
         return fn
 
     def __reload(self, useCache=True, fmt="json"):
+        nD = ntD = pD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         self.__mU.mkdir(self.__dirPath)
@@ -185,7 +189,7 @@ class Scop2ClassificationProvider(object):
             sfD = sD["superfamilies"]
             sf2bD = sD["superfamilies2b"]
 
-        else:
+        elif not useCache:
             nmL, dmL, scop2bL, _ = self.__fetchFromSource()
             #
             ok = False
@@ -231,8 +235,8 @@ class Scop2ClassificationProvider(object):
             https://scop.mrc-lmb.cam.ac.uk/files/scop-cla-latest.txt
 
         SIFTS extrapolated SCOP2 and SCOP2B assignments:
-            ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2b_sf_uniprot.tsv.gz
-            ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2_uniprot.tsv.gz
+            https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2b_sf_uniprot.tsv.gz
+            https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2_uniprot.tsv.gz
 
         """
         urlTargetScop2 = "https://scop.mrc-lmb.cam.ac.uk/files"
@@ -249,8 +253,8 @@ class Scop2ClassificationProvider(object):
         #
         headerLines = self.__mU.doImport(url, fmt="list", uncomment=False, encoding=encoding)
         self.__version = headerLines[0].split(" ")[3] if headerLines else "2021-05-27"
-        #
-        urlTargetSifts = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"
+        # JDW note cert issues with this site
+        urlTargetSifts = "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"
         fn = "pdb_chain_scop2b_sf_uniprot.tsv.gz"
         url = os.path.join(urlTargetSifts, fn)
         scop2bL = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)

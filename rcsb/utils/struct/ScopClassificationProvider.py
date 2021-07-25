@@ -18,11 +18,12 @@ import sys
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class ScopClassificationProvider(object):
+class ScopClassificationProvider(StashableBase):
     """Extract SCOPe assignments, term descriptions and SCOP classifications
     from SCOP flat files.
 
@@ -30,26 +31,34 @@ class ScopClassificationProvider(object):
 
     def __init__(self, **kwargs):
         #
-        self.__scopDirPath = kwargs.get("scopDirPath", ".")
+        self.__dirName = "scop"
+        if "cachePath" in kwargs:
+            self.__cachePath = os.path.abspath(kwargs.get("cachePath", None))
+            self.__scopDirPath = os.path.join(self.__cachePath, self.__dirName)
+        else:
+            self.__scopDirPath = kwargs.get("scopDirPath", ".")
+            self.__cachePath, self.__dirName = os.path.split(os.path.abspath(self.__scopDirPath))
+        super(ScopClassificationProvider, self).__init__(self.__cachePath, [self.__dirName])
+        #
         useCache = kwargs.get("useCache", True)
         urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
         # self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
-        self.__version = kwargs.get("scopVersion", "2.07-2021-04-13")
+        self.__version = kwargs.get("scopVersion", "2.07-2021-07-07")
         #
         urlBackupPath = kwargs.get("scopUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP")
         #
         self.__mU = MarshalUtil(workPath=self.__scopDirPath)
         self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=useCache, version=self.__version)
         #
-        if not self.testCache():
+        if not useCache and not self.testCache():
             ok = self.__fetchFromBackup(urlBackupPath, self.__scopDirPath)
             if ok:
                 self.__nD, self.__pD, self.__pdbD = self.__reload(urlTarget, self.__scopDirPath, useCache=True, version=self.__version)
 
     def testCache(self):
-        logger.info("Lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
+        logger.info("SCOP lengths nD %d pD %d pdbD %d", len(self.__nD), len(self.__pD), len(self.__pdbD))
         if (len(self.__nD) > 100) and (len(self.__pD) > 100) and (len(self.__pdbD) > 100):
             return True
         return False
@@ -144,6 +153,7 @@ class ScopClassificationProvider(object):
     ###
     #
     def __reload(self, urlTarget, scopDirPath, useCache=True, version=None):
+        nD = pD = pdbD = {}
         pyVersion = sys.version_info[0]
         scopDomainPath = os.path.join(scopDirPath, "scop_domains-py%s.pic" % str(pyVersion))
         self.__mU.mkdir(scopDirPath)
@@ -157,7 +167,7 @@ class ScopClassificationProvider(object):
             pD = sD["parents"]
             pdbD = sD["assignments"]
 
-        else:
+        elif not useCache:
             ok = False
             minLen = 1000
             logger.info("Fetch SCOPe name and domain assignment data using target URL %s", urlTarget)

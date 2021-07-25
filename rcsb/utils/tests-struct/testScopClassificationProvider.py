@@ -29,6 +29,7 @@ class ScopClassificationProviderTests(unittest.TestCase):
     def setUp(self):
         self.__dirPath = os.path.join(os.path.dirname(TOPDIR), "rcsb", "mock-data")
         self.__workPath = os.path.join(HERE, "test-output")
+        self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
         #
         self.__startTime = time.time()
         logger.debug("Running tests on version %s", __version__)
@@ -39,13 +40,9 @@ class ScopClassificationProviderTests(unittest.TestCase):
         logger.debug("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
     def testGetScopData(self):
-        """ Load latest scop data and test accessors
-        """
+        """Load latest scop data and test accessors"""
         try:
-            # cacheLocalFilePath = os.path.join(self.__dirPath, "domains_struct")
-            # scu = ScopClassificationProvider(scopDirPath=self.__workPath, scopTargetUrl=cacheLocalFilePath, useCache=False)
-            dirPath = os.path.join(self.__workPath, "domains_struct")
-            scu = ScopClassificationProvider(scopDirPath=dirPath, useCache=False)
+            scu = ScopClassificationProvider(cachePath=self.__cachePath, useCache=False)
             self.assertEqual(scu.getScopName(58788), "Designed proteins")
             self.assertEqual(scu.getNameLineage(58231), ["Peptides"])
             self.assertEqual(scu.getIdLineage(58231), [58231])
@@ -69,10 +66,9 @@ class ScopClassificationProviderTests(unittest.TestCase):
             self.fail()
 
     def testScopClassificationAccessMethods(self):
-        """ Test Scop tree node list generation --
-        """
+        """Test Scop tree node list generation --"""
         try:
-            scu = ScopClassificationProvider(scopDirPath=self.__workPath, useCache=True)
+            scu = ScopClassificationProvider(cachePath=self.__cachePath, useCache=True)
             nL = scu.getTreeNodeList()
             logger.debug("Node list length %d", len(nL))
             logger.debug("Nodes %r", nL[:30])

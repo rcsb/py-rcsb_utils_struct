@@ -19,11 +19,12 @@ import sys
 
 from rcsb.utils.io.FileUtil import FileUtil
 from rcsb.utils.io.MarshalUtil import MarshalUtil
+from rcsb.utils.io.StashableBase import StashableBase
 
 logger = logging.getLogger(__name__)
 
 
-class EcodClassificationProvider(object):
+class EcodClassificationProvider(StashableBase):
     """Extract ECOD domain assignments, term descriptions and ECOD classification hierarchy
     from ECOD flat files.
 
@@ -43,6 +44,8 @@ class EcodClassificationProvider(object):
     def __init__(self, cachePath, useCache, **kwargs):
         self.__cachePath = cachePath
         self.__useCache = useCache
+        dirName = "ecod"
+        super(EcodClassificationProvider, self).__init__(self.__cachePath, [dirName])
         self.__dirPath = os.path.join(cachePath, "ecod")
         self.__version = None
         #
@@ -154,7 +157,7 @@ class EcodClassificationProvider(object):
             pD = sD["parents"]
             pdbD = sD["assignments"]
             self.__version = sD["version"]
-        else:
+        elif not useCache:
             minLen = 1000
             logger.info("Fetch ECOD name and domain assignment data from primary data source %s", urlTarget)
             nmL = self.__fetchFromSource(urlTarget)
@@ -190,6 +193,7 @@ class EcodClassificationProvider(object):
             self.__version = ff[-1]
         #
         nmL = self.__mU.doImport(fp, fmt="list", uncomment=True)
+        fU.remove(fp)
         #
         return nmL
 
