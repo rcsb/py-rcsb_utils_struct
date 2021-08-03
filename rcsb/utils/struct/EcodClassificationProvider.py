@@ -113,6 +113,8 @@ class EcodClassificationProvider(StashableBase):
         pList = []
         try:
             pList.append(domId)
+            if domId == 0:
+                return pList
             pt = self.__pD[domId]
             while (pt is not None) and (pt != 0):
                 pList.append(pt)
