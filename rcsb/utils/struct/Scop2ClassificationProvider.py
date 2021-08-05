@@ -441,6 +441,7 @@ class Scop2ClassificationProvider(StashableBase):
             elif ptId == rootId:
                 dD = {"id": str(tId), "name": displayName, "depth": 0}
             else:
+                displayName = displayName if displayName else "Domain %s" % str(tId)
                 dD = {"id": str(tId), "name": displayName, "parents": [str(ptId)], "depth": len(lL)}
             dL.append(dD)
 

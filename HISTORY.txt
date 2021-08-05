@@ -24,3 +24,4 @@
  13-Jul-2021    V0.31 Adjust returned values in get range methods for SCOP2/B and ECOD
  15-Jul-2021    V0.32 Unify on the common provider constructor API, make providers a subclass of rcsb.utils.io.StashableBase
   3-Aug-2021    V0.33 Handle ECOD root id in getIdLineage()
+  4-Aug-2021    V0.34 Assign synthetic names to unnamed SCOP2 domains
