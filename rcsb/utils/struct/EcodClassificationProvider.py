@@ -187,7 +187,7 @@ class EcodClassificationProvider(StashableBase):
         if not fU.exists(fp):
             fU.get(urlTarget, fp)
         #
-        with open(fp, "r") as ifh:
+        with open(fp, "r", encoding="utf-8") as ifh:
             line = ifh.readline()
             line = ifh.readline()
             line = ifh.readline()
