@@ -231,16 +231,22 @@ class EcodClassificationProvider(StashableBase):
             #  There are no unique identifiers published for the internal elements of the hierarchy
             #   so these are assigned here similar to scop -   There are also many unnamed nodes
             #   that are conventionally filled in from the leaf levels of the tree...
+            #  {"A": "Architecture", "X": "Possible Homology", "H": "Homology", "T": "Topology", "F": "Family"}
             aGroupOrg = "A: " + ff[9].replace('"', "")
             xGroupOrg = "X: " + ff[10].replace('"', "")
             hGroupOrg = "H: " + ff[11].replace('"', "")
             tGroupOrg = "T: " + ff[12].replace('"', "")
             fGroupOrg = "F: " + ff[13].replace('"', "")
             if hGroupOrg == "H: NO_H_NAME":
-                hGroupOrg = tGroupOrg + "|(NO_H)"
+                # hGroupOrg = tGroupOrg  + "|(NO_H)"
+                hGroupOrg = "H: " + ff[12].replace('"', "") + " (From Topology)" + "|(NO_H)"
             if xGroupOrg == "X: NO_X_NAME":
-                xGroupOrg = hGroupOrg + "|(NO_X)"
-            #
+                if ff[11].replace('"', "") == "NO_H_NAME":
+                    # xGroupOrg = hGroupOrg + "|(NO_X)"
+                    xGroupOrg = "X: " + ff[12].replace('"', "") + " (From Topology)" + "|(NO_X)"
+                else:
+                    xGroupOrg = "X: " + ff[11].replace('"', "") + " (From Homology)" + "|(NO_X)"
+                #
             fGroupOrg = fGroupOrg if fGroupOrg != "F_UNCLASSIFIED" else "Unmapped domain of " + tGroupOrg
             #
             # Remove redundancy in names and assign unique ids
