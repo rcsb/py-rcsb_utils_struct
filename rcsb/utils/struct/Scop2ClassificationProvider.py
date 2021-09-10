@@ -3,7 +3,7 @@
 #  Date:  29-Jun-2021 jdw
 #
 #  Updates:
-#
+#   10-Sep-2021 jdw split tree with type and class roots
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -41,17 +41,17 @@ class Scop2ClassificationProvider(StashableBase):
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
-        self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
+        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
         if not useCache and not self.testCache():
             ok = self.__fetchFromBackup()
             if ok:
-                self.__nD, self.__ntD, self.__pD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+                self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         #
 
     def testCache(self):
-        logger.info("SCOP2 lengths nD %d pD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
-        if (len(self.__nD) > 9000) and (len(self.__pD) > 70000):
+        logger.info("SCOP2 lengths nD %d pAD %d pBD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
+        if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000) and (len(self.__pBD) > 70000):
             return True
         return False
 
@@ -139,18 +139,22 @@ class Scop2ClassificationProvider(StashableBase):
         return None
 
     def getIdLineage(self, domId):
-        pList = []
+        pS = set()
         try:
-            pList.append(domId)
-            pt = self.__pD[domId]
+            pS.add(domId)
+            pt = self.__pAD[domId]
             while (pt is not None) and (pt != 0):
-                pList.append(pt)
-                pt = self.__pD[pt]
+                pS.add(pt)
+                pt = self.__pAD[pt]
+            #
+            pt = self.__pBD[domId]
+            while (pt is not None) and (pt != 0):
+                pS.add(pt)
+                pt = self.__pBD[pt]
         except Exception as e:
             logger.debug("Failing for %r with %s", domId, str(e))
         #
-        pList.reverse()
-        return pList
+        return sorted(pS)
 
     def getNameLineage(self, domId):
         try:
@@ -165,7 +169,9 @@ class Scop2ClassificationProvider(StashableBase):
         return None
 
     def getTreeNodeList(self):
-        return self.__exportTreeNodeList(self.__nD, self.__pD)
+        tnL = self.__exportTreeNodeList(self.__nD, self.__pAD)
+        tnL.extend(self.__exportTreeNodeList(self.__nD, self.__pBD))
+        return tnL
 
     def __getAssignmentFileName(self, fmt="json"):
         ext = "json" if fmt == "json" else "pic"
@@ -173,7 +179,7 @@ class Scop2ClassificationProvider(StashableBase):
         return fn
 
     def __reload(self, useCache=True, fmt="json"):
-        nD = ntD = pD = fD = sfD = sf2bD = {}
+        nD = ntD = pAD = pBD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         self.__mU.mkdir(self.__dirPath)
@@ -184,7 +190,8 @@ class Scop2ClassificationProvider(StashableBase):
             self.__version = sD["version"]
             nD = sD["names"]
             ntD = sD["nametypes"]
-            pD = sD["parents"]
+            pAD = sD["parentsType"]
+            pBD = sD["parentsClass"]
             fD = sD["families"]
             sfD = sD["superfamilies"]
             sf2bD = sD["superfamilies2b"]
@@ -195,9 +202,10 @@ class Scop2ClassificationProvider(StashableBase):
             ok = False
             nD = self.__extractNames(nmL)
             logger.info("Domain name dictionary (%d)", len(nD))
-            pD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
+            pAD, pBD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
             #
-            logger.info("Domain node parent hierarchy (%d)", len(pD))
+            logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
+            logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
             logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
             #
             sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
@@ -206,11 +214,11 @@ class Scop2ClassificationProvider(StashableBase):
             tS = datetime.datetime.now().isoformat()
             # vS = datetime.datetime.now().strftime("%Y-%m-%d")
             vS = self.__version
-            sD = {"version": vS, "created": tS, "names": nD, "nametypes": ntD, "parents": pD, "families": fD, "superfamilies": sfD, "superfamilies2b": sf2bD}
+            sD = {"version": vS, "created": tS, "names": nD, "nametypes": ntD, "parentsType": pAD, "parentsClass": pBD, "families": fD, "superfamilies": sfD, "superfamilies2b": sf2bD}
             ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
             logger.info("Cache save status %r", ok)
             #
-        return nD, ntD, pD, fD, sfD, sf2bD
+        return nD, ntD, pAD, pBD, fD, sfD, sf2bD
 
     def __fetchFromBackup(self, fmt="json"):
         urlTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
@@ -305,7 +313,8 @@ class Scop2ClassificationProvider(StashableBase):
         """
         # Build the parent dictionary and name node type
         ntD = {}
-        pD = {}
+        pAD = {}
+        pBD = {}
         fD = {}
         sfD = {}
         domToSfD = {}
@@ -323,13 +332,28 @@ class Scop2ClassificationProvider(StashableBase):
                     tD[tL[0]] = tL[1]
                 #
                 # -
-                pD[tD["TP"]] = 0
-                pD[tD["CL"]] = tD["TP"]
-                pD[tD["CF"]] = tD["CL"]
-                pD[tD["SF"]] = tD["CF"]
-                pD[tD["FA"]] = tD["SF"]
-                pD[domFamilyId] = tD["FA"]
-                pD[domSuperFamilyId] = tD["SF"]
+                # pD[tD["TP"]] = 0
+                # pD[tD["CL"]] = tD["TP"]
+                # pD[tD["CF"]] = tD["CL"]
+                # pD[tD["SF"]] = tD["CF"]
+                # pD[tD["FA"]] = tD["SF"]
+                # pD[domFamilyId] = tD["FA"]
+                # pD[domSuperFamilyId] = tD["SF"]
+                #
+                #  Represent as two trees separately rooted in protein type  and structural class
+                pAD[tD["TP"]] = 0
+                pAD[tD["CF"]] = tD["TP"]
+                pAD[tD["SF"]] = tD["CF"]
+                pAD[tD["FA"]] = tD["SF"]
+                pAD[domFamilyId] = tD["FA"]
+                pAD[domSuperFamilyId] = tD["SF"]
+                #
+                pBD[tD["CL"]] = 0
+                pBD[tD["CF"]] = tD["CL"]
+                pBD[tD["SF"]] = tD["CF"]
+                pBD[tD["FA"]] = tD["SF"]
+                pBD[domFamilyId] = tD["FA"]
+                pBD[domSuperFamilyId] = tD["SF"]
                 #
                 ntD[tD["FA"]] = "FA"
                 ntD[tD["SF"]] = "SF"
@@ -350,9 +374,9 @@ class Scop2ClassificationProvider(StashableBase):
             except Exception as e:
                 logger.exception("Failing for case %r: %s", dm, str(e))
         #
-        logger.info("pD (%d) ntD (%d)", len(pD), len(ntD))
+        logger.info("pAD (%d) pBD (%d) ntD (%d)", len(pAD), len(pBD), len(ntD))
         logger.info("fD (%d) sfD (%d)", len(fD), len(sfD))
-        return pD, ntD, fD, sfD, domToSfD
+        return pAD, pBD, ntD, fD, sfD, domToSfD
 
     def __parseAssignment(self, tS):
         authAsymId = authSeqBeg = authSeqEnd = None

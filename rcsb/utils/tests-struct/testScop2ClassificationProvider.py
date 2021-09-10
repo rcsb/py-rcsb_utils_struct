@@ -121,7 +121,7 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
             ccu = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=True)
             nL = ccu.getTreeNodeList()
             self.assertGreaterEqual(len(nL), 75000)
-            logger.debug("SCOP2 tree node list length %d", len(nL))
+            logger.info("SCOP2 tree node list length %d", len(nL))
             logger.debug("SCOP2 tree Nodes %r", nL[:20])
             mU = MarshalUtil(workPath=self.__cachePath)
             mU.doExport(self.__treePath, nL, fmt="json", indent=3)

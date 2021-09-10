@@ -27,3 +27,4 @@
   4-Aug-2021    V0.34 Assign synthetic names to unnamed SCOP2 domains
  21-Aug-2021    V0.35 Update dependencies and pipeline files
  23-Aug-2021    V0.36 Adjustments to ECOD lineage construction for unnamed nodes
+ 10-Sep-2021    V0.37 Separate protein type and structural class in tree representation.
