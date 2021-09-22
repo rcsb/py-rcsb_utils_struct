@@ -32,8 +32,6 @@ logger = logging.getLogger()
 
 
 class EntryInfoProviderTests(unittest.TestCase):
-    doInternal = True
-
     def setUp(self):
         self.__cachePath = os.path.join(HERE, "test-output", "CACHE")
         self.__dataPath = os.path.join(HERE, "test-data")

@@ -8,6 +8,8 @@
 """
 Accessors for entry-level annotations extracted from ExDB.
 
+Generator methods are in rcsb.exdb.entry.EntryInfoProvider.
+
 """
 
 import logging

@@ -28,3 +28,4 @@
  21-Aug-2021    V0.35 Update dependencies and pipeline files
  23-Aug-2021    V0.36 Adjustments to ECOD lineage construction for unnamed nodes
  10-Sep-2021    V0.37 Separate protein type and structural class in tree representation.
+ 22-Sep-2021    V0.38 Add module EntryInfoProvider and associated tests (accessor methods only)
