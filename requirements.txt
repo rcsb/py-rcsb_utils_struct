@@ -1,1 +1,1 @@
-rcsb.utils.io >= 1.17
+rcsb.utils.io >= 1.28
