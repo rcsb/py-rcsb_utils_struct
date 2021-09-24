@@ -41,11 +41,13 @@ class ScopClassificationProvider(StashableBase):
         super(ScopClassificationProvider, self).__init__(self.__cachePath, [self.__dirName])
         #
         useCache = kwargs.get("useCache", True)
-        urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
+        # urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/update")
         # self.__version = kwargs.get("scopVersion", "2.07-2019-07-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
-        self.__version = kwargs.get("scopVersion", "2.07-2021-07-07")
+        # self.__version = kwargs.get("scopVersion", "2.07-2021-07-07")
+        urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/parse")
+        self.__version = kwargs.get("scopVersion", "2.08-stable")
         #
         urlBackupPath = kwargs.get("scopUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP")
         #
