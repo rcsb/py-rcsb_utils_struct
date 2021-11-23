@@ -30,3 +30,4 @@
  10-Sep-2021    V0.37 Separate protein type and structural class in tree representation.
  22-Sep-2021    V0.38 Add module EntryInfoProvider and associated tests (accessor methods only)
  23-Sep-2021    V0.39 Update SCOP version and path details
+ 16-Nov-2021    V0.40 Append additional ECOD annotations for given entryId and chainId instead of overwriting

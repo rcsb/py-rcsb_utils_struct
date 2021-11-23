@@ -3,6 +3,7 @@
 #  Date:  3-Apr-2019 jdw
 #
 #  Updates:
+#  16-Nov-2021 dwp Append additional ecod annotations for given entryId and chainId instead of overwriting
 #
 ##
 """
@@ -316,7 +317,11 @@ class EcodClassificationProvider(StashableBase):
             ntD[tId] = "T"
             ntD[fId] = "F"
             rL = self.__parseRanges(resRange)
-            assignD[(entryId, authAsymId)] = [(ecodId, fId, t[0], t[1], t[2]) for t in rL]
+            if (entryId, authAsymId) not in assignD:
+                assignD[(entryId, authAsymId)] = [(ecodId, fId, t[0], t[1], t[2]) for t in rL]
+            else:
+                for t in rL:
+                    assignD[(entryId, authAsymId)].append((ecodId, fId, t[0], t[1], t[2]))
             #
         return pIdD, nmD, ntD, assignD
 
