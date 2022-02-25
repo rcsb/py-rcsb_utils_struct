@@ -51,7 +51,7 @@ class Scop2ClassificationProvider(StashableBase):
 
     def testCache(self):
         logger.info("SCOP2 lengths nD %d pAD %d pBD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
-        if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000) and (len(self.__pBD) > 70000):
+        if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000):  # and (len(self.__pBD) > 70000):
             return True
         return False
 
@@ -169,8 +169,13 @@ class Scop2ClassificationProvider(StashableBase):
         return None
 
     def getTreeNodeList(self):
-        tnL = self.__exportTreeNodeList(self.__nD, self.__pAD)
-        tnL.extend(self.__exportTreeNodeList(self.__nD, self.__pBD))
+        tnL = self.__exportTreeNodeList(self.__nD, self.__pAD, self.__pBD)
+        # print("AB:", len(tnL))
+        # for d in tnL:
+        #     if d['id'] == "2001470":
+        #         print("AB", d)
+        # uniqIdAB=set([d['id'] for d in tnL])
+        # print(" AB unique:", len(uniqIdAB))
         return tnL
 
     def __getAssignmentFileName(self, fmt="json"):
@@ -350,10 +355,10 @@ class Scop2ClassificationProvider(StashableBase):
                 #
                 pBD[tD["CL"]] = 0
                 pBD[tD["CF"]] = tD["CL"]
-                pBD[tD["SF"]] = tD["CF"]
-                pBD[tD["FA"]] = tD["SF"]
-                pBD[domFamilyId] = tD["FA"]
-                pBD[domSuperFamilyId] = tD["SF"]
+                # pBD[tD["SF"]] = tD["CF"]      # comment out to avoid re-creating redundant key:values already in pAD
+                # pBD[tD["FA"]] = tD["SF"]
+                # pBD[domFamilyId] = tD["FA"]
+                # pBD[domSuperFamilyId] = tD["SF"]
                 #
                 ntD[tD["FA"]] = "FA"
                 ntD[tD["SF"]] = "SF"
@@ -420,7 +425,7 @@ class Scop2ClassificationProvider(StashableBase):
             logger.exception("Failing with %s", str(e))
         return sfD
 
-    def __exportTreeNodeList(self, nD, pD):
+    def __exportTreeNodeList(self, nD, pAD, pBD):
         """Create node list from the SCOP2 parent and name/description dictionaries.
 
         Exclude the root node from the tree.
@@ -430,18 +435,34 @@ class Scop2ClassificationProvider(StashableBase):
         rootId = 0
         pL = [rootId]
         #
-        logger.info("nD %d pD %d pL %r", len(nD), len(pD), pL)
+        logger.info("nD %d pAD %d pBD %d pL %r", len(nD), len(pAD), len(pBD), pL)
         # create child dictionary
         cD = {}
-        for ctId, ptId in pD.items():
+        for ctId, ptId in pAD.items():
+            cD.setdefault(ptId, []).append(ctId)
+        for ctId, ptId in pBD.items():
             cD.setdefault(ptId, []).append(ctId)
         #
+        # i=0
+        # print("\ncD", len(cD))
+        # for k, v in cD.items():
+        #     print(k,v)
+        #     i+=1
+        #     if i==5:
+        #         break
+        # print("cD[2001470]", cD["2001470"])
+        # for k, v in cD.items():
+        #     if "2001470" in v:
+        #         print(k,v)
+
+
         logger.debug("cD %d", len(cD))
         #
         idL = []
         for rootId in sorted(pL):
             visited = set([rootId])
             queue = collections.deque(visited)
+            print("queue", queue)
             while queue:
                 tId = queue.popleft()
                 idL.append(tId)
@@ -456,17 +477,21 @@ class Scop2ClassificationProvider(StashableBase):
         dL = []
         for tId in idL:
             displayName = nD[tId] if tId in nD else None
-            ptId = pD[tId] if tId in pD else None
+            ptIdL = []
+            if tId in pAD:
+                ptIdL.append(pAD[tId])
+            if tId in pBD:
+                ptIdL.append(pBD[tId])
             lL = self.getIdLineage(tId)[1:]
             #
             # d = {'id': str(tId), 'name': displayName, 'lineage': [str(t) for t in lL], 'parents': [str(ptId)], 'depth': len(lL)}
             if tId == rootId:
                 continue
-            elif ptId == rootId:
+            elif any([ptId == rootId for ptId in ptIdL]):
                 dD = {"id": str(tId), "name": displayName, "depth": 0}
             else:
                 displayName = displayName if displayName else "Domain %s" % str(tId)
-                dD = {"id": str(tId), "name": displayName, "parents": [str(ptId)], "depth": len(lL)}
+                dD = {"id": str(tId), "name": displayName, "parents": ptIdL, "depth": len(lL)}
             dL.append(dD)
 
         return dL

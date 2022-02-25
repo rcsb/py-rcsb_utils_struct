@@ -31,3 +31,4 @@
  22-Sep-2021    V0.38 Add module EntryInfoProvider and associated tests (accessor methods only)
  23-Sep-2021    V0.39 Update SCOP version and path details
  16-Nov-2021    V0.40 Append additional ECOD annotations for given entryId and chainId instead of overwriting
+ 24-Feb-2022    V0.41 Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
