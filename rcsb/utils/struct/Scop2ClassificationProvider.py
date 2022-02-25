@@ -4,6 +4,7 @@
 #
 #  Updates:
 #   10-Sep-2021 jdw split tree with type and class roots
+#   24-Feb-2022 dwp Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -51,7 +52,7 @@ class Scop2ClassificationProvider(StashableBase):
 
     def testCache(self):
         logger.info("SCOP2 lengths nD %d pAD %d pBD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
-        if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000):  # and (len(self.__pBD) > 70000):
+        if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000):
             return True
         return False
 
@@ -170,12 +171,6 @@ class Scop2ClassificationProvider(StashableBase):
 
     def getTreeNodeList(self):
         tnL = self.__exportTreeNodeList(self.__nD, self.__pAD, self.__pBD)
-        # print("AB:", len(tnL))
-        # for d in tnL:
-        #     if d['id'] == "2001470":
-        #         print("AB", d)
-        # uniqIdAB=set([d['id'] for d in tnL])
-        # print(" AB unique:", len(uniqIdAB))
         return tnL
 
     def __getAssignmentFileName(self, fmt="json"):
@@ -355,10 +350,8 @@ class Scop2ClassificationProvider(StashableBase):
                 #
                 pBD[tD["CL"]] = 0
                 pBD[tD["CF"]] = tD["CL"]
-                # pBD[tD["SF"]] = tD["CF"]      # comment out to avoid re-creating redundant key:values already in pAD
-                # pBD[tD["FA"]] = tD["SF"]
-                # pBD[domFamilyId] = tD["FA"]
-                # pBD[domSuperFamilyId] = tD["SF"]
+                # Don't capture any lower branches to avoid re-creating redundant key:values already in pAD
+                #
                 #
                 ntD[tD["FA"]] = "FA"
                 ntD[tD["SF"]] = "SF"
@@ -443,26 +436,12 @@ class Scop2ClassificationProvider(StashableBase):
         for ctId, ptId in pBD.items():
             cD.setdefault(ptId, []).append(ctId)
         #
-        # i=0
-        # print("\ncD", len(cD))
-        # for k, v in cD.items():
-        #     print(k,v)
-        #     i+=1
-        #     if i==5:
-        #         break
-        # print("cD[2001470]", cD["2001470"])
-        # for k, v in cD.items():
-        #     if "2001470" in v:
-        #         print(k,v)
-
-
         logger.debug("cD %d", len(cD))
         #
         idL = []
         for rootId in sorted(pL):
             visited = set([rootId])
             queue = collections.deque(visited)
-            print("queue", queue)
             while queue:
                 tId = queue.popleft()
                 idL.append(tId)
