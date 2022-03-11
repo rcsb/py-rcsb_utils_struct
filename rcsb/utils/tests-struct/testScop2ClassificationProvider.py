@@ -104,8 +104,8 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
                     self.assertTrue(lL)
                     nL = scp.getNameLineage(sfId)
                     self.assertTrue(nL)
-                    logger.debug("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
-                    logger.debug("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
+                    logger.info("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
+                    logger.info("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
                 #
                 sfns = scp.getSuperFamilyNames2B(pdbTup[0], pdbTup[1])
                 sfRanges = scp.getSuperFamilyResidueRanges2B(pdbTup[0], pdbTup[1])

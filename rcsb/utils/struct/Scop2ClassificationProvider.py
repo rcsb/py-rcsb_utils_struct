@@ -42,16 +42,19 @@ class Scop2ClassificationProvider(StashableBase):
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
-        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
+        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
         if not useCache and not self.testCache():
             ok = self.__fetchFromBackup()
             if ok:
-                self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+                self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         #
 
     def testCache(self):
-        logger.info("SCOP2 lengths nD %d pAD %d pBD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
+        logger.info(
+            "SCOP2 lengths nD %d pAD %d pBD %d pBRootD %d fD %d sfD %d sf2bD %d",
+            len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__pBRootD), len(self.__fD), len(self.__sfD), len(self.__sf2bD)
+        )
         if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000):
             return True
         return False
@@ -170,7 +173,7 @@ class Scop2ClassificationProvider(StashableBase):
         return None
 
     def getTreeNodeList(self):
-        tnL = self.__exportTreeNodeList(self.__nD, self.__pAD, self.__pBD)
+        tnL = self.__exportTreeNodeList(self.__nD, self.__pAD, self.__pBRootD)
         return tnL
 
     def __getAssignmentFileName(self, fmt="json"):
@@ -179,7 +182,7 @@ class Scop2ClassificationProvider(StashableBase):
         return fn
 
     def __reload(self, useCache=True, fmt="json"):
-        nD = ntD = pAD = pBD = fD = sfD = sf2bD = {}
+        nD = ntD = pAD = pBD = pBRootD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         self.__mU.mkdir(self.__dirPath)
@@ -192,6 +195,7 @@ class Scop2ClassificationProvider(StashableBase):
             ntD = sD["nametypes"]
             pAD = sD["parentsType"]
             pBD = sD["parentsClass"]
+            pBRootD = sD["parentsClassRoot"]
             fD = sD["families"]
             sfD = sD["superfamilies"]
             sf2bD = sD["superfamilies2b"]
@@ -202,10 +206,11 @@ class Scop2ClassificationProvider(StashableBase):
             ok = False
             nD = self.__extractNames(nmL)
             logger.info("Domain name dictionary (%d)", len(nD))
-            pAD, pBD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
+            pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
             #
             logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
             logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
+            logger.info("Domain node parent hierarchy (structural class root) (%d)", len(pBRootD))
             logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
             #
             sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
@@ -214,11 +219,22 @@ class Scop2ClassificationProvider(StashableBase):
             tS = datetime.datetime.now().isoformat()
             # vS = datetime.datetime.now().strftime("%Y-%m-%d")
             vS = self.__version
-            sD = {"version": vS, "created": tS, "names": nD, "nametypes": ntD, "parentsType": pAD, "parentsClass": pBD, "families": fD, "superfamilies": sfD, "superfamilies2b": sf2bD}
+            sD = {
+                "version": vS,
+                "created": tS,
+                "names": nD,
+                "nametypes": ntD,
+                "parentsType": pAD,
+                "parentsClass": pBD,
+                "parentsClassRoot": pBRootD,
+                "families": fD,
+                "superfamilies": sfD,
+                "superfamilies2b": sf2bD
+            }
             ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
             logger.info("Cache save status %r", ok)
             #
-        return nD, ntD, pAD, pBD, fD, sfD, sf2bD
+        return nD, ntD, pAD, pBD, pBRootD, fD, sfD, sf2bD
 
     def __fetchFromBackup(self, fmt="json"):
         urlTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
@@ -315,6 +331,7 @@ class Scop2ClassificationProvider(StashableBase):
         ntD = {}
         pAD = {}
         pBD = {}
+        pBRootD = {}
         fD = {}
         sfD = {}
         domToSfD = {}
@@ -348,10 +365,17 @@ class Scop2ClassificationProvider(StashableBase):
                 pAD[domFamilyId] = tD["FA"]
                 pAD[domSuperFamilyId] = tD["SF"]
                 #
+                # Use this complete pBD here only for generating ID lineages, but NOT for merging with pAD
                 pBD[tD["CL"]] = 0
                 pBD[tD["CF"]] = tD["CL"]
-                # Don't capture any lower branches to avoid re-creating redundant key:values already in pAD
+                pBD[tD["SF"]] = tD["CF"]
+                pBD[tD["FA"]] = tD["SF"]
+                pBD[domFamilyId] = tD["FA"]
+                pBD[domSuperFamilyId] = tD["SF"]
                 #
+                # Use pBRootD for creating tree node lists; Don't capture any lower branches to avoid re-creating redundant key:values already in pAD
+                pBRootD[tD["CL"]] = 0
+                pBRootD[tD["CF"]] = tD["CL"]
                 #
                 ntD[tD["FA"]] = "FA"
                 ntD[tD["SF"]] = "SF"
@@ -372,9 +396,9 @@ class Scop2ClassificationProvider(StashableBase):
             except Exception as e:
                 logger.exception("Failing for case %r: %s", dm, str(e))
         #
-        logger.info("pAD (%d) pBD (%d) ntD (%d)", len(pAD), len(pBD), len(ntD))
+        logger.info("pAD (%d) pBD (%d) pBRootD (%d) ntD (%d)", len(pAD), len(pBD), len(pBRootD), len(ntD))
         logger.info("fD (%d) sfD (%d)", len(fD), len(sfD))
-        return pAD, pBD, ntD, fD, sfD, domToSfD
+        return pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD
 
     def __parseAssignment(self, tS):
         authAsymId = authSeqBeg = authSeqEnd = None
@@ -418,7 +442,7 @@ class Scop2ClassificationProvider(StashableBase):
             logger.exception("Failing with %s", str(e))
         return sfD
 
-    def __exportTreeNodeList(self, nD, pAD, pBD):
+    def __exportTreeNodeList(self, nD, pAD, pBRootD):
         """Create node list from the SCOP2 parent and name/description dictionaries.
 
         Exclude the root node from the tree.
@@ -428,12 +452,12 @@ class Scop2ClassificationProvider(StashableBase):
         rootId = 0
         pL = [rootId]
         #
-        logger.info("nD %d pAD %d pBD %d pL %r", len(nD), len(pAD), len(pBD), pL)
+        logger.info("nD %d pAD %d pBRootD %d pL %r", len(nD), len(pAD), len(pBRootD), pL)
         # create child dictionary
         cD = {}
         for ctId, ptId in pAD.items():
             cD.setdefault(ptId, []).append(ctId)
-        for ctId, ptId in pBD.items():
+        for ctId, ptId in pBRootD.items():
             cD.setdefault(ptId, []).append(ctId)
         #
         logger.debug("cD %d", len(cD))
@@ -459,8 +483,8 @@ class Scop2ClassificationProvider(StashableBase):
             ptIdL = []
             if tId in pAD:
                 ptIdL.append(pAD[tId])
-            if tId in pBD:
-                ptIdL.append(pBD[tId])
+            if tId in pBRootD:
+                ptIdL.append(pBRootD[tId])
             lL = self.getIdLineage(tId)[1:]
             #
             # d = {'id': str(tId), 'name': displayName, 'lineage': [str(t) for t in lL], 'parents': [str(ptId)], 'depth': len(lL)}
