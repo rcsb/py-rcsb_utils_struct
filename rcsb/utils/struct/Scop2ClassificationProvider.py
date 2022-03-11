@@ -51,7 +51,10 @@ class Scop2ClassificationProvider(StashableBase):
         #
 
     def testCache(self):
-        logger.info("SCOP2 lengths nD %d pAD %d pBD %d pBRootD %d fD %d sfD %d sf2bD %d", len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__pBRootD), len(self.__fD), len(self.__sfD), len(self.__sf2bD))
+        logger.info(
+            "SCOP2 lengths nD %d pAD %d pBD %d pBRootD %d fD %d sfD %d sf2bD %d",
+            len(self.__nD), len(self.__pAD), len(self.__pBD), len(self.__pBRootD), len(self.__fD), len(self.__sfD), len(self.__sf2bD)
+        )
         if (len(self.__nD) > 9000) and (len(self.__pAD) > 70000):
             return True
         return False
