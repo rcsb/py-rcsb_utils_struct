@@ -33,3 +33,4 @@
  16-Nov-2021    V0.40 Append additional ECOD annotations for given entryId and chainId instead of overwriting
  24-Feb-2022    V0.41 Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
   9-Mar-2022    V0.42 Fix issue related to V0.41 update to Scop2 provider
+  6-Jan-2023    V0.43 Configuration changes to support tox 4
