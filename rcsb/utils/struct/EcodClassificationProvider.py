@@ -14,6 +14,7 @@
 
 import collections
 import datetime
+import gzip
 import logging
 import os.path
 import sys
@@ -165,7 +166,7 @@ class EcodClassificationProvider(StashableBase):
             logger.info("Fetch ECOD name and domain assignment data from primary data source %s", urlTarget)
             nmL = self.__fetchFromSource(urlTarget)
             if not nmL:
-                nmL = self.__fetchFromSource(urlBackup)
+                nmL = self.__fetchFromBackup(urlBackup)
             #
             logger.info("ECOD raw file length (%d)", len(nmL))
             ok = False
@@ -189,6 +190,26 @@ class EcodClassificationProvider(StashableBase):
             fU.get(urlTarget, fp)
         #
         with open(fp, "r", encoding="utf-8") as ifh:
+            line = ifh.readline()
+            line = ifh.readline()
+            line = ifh.readline()
+            ff = line[:-1].split()
+            self.__version = ff[-1]
+        #
+        nmL = self.__mU.doImport(fp, fmt="list", uncomment=True)
+        fU.remove(fp)
+        #
+        return nmL
+
+    def __fetchFromBackup(self, urlTarget):
+        """Fetch and unzip the classification names and domain assignments from the backup file."""
+        fU = FileUtil()
+        fn = fU.getFileName(urlTarget)
+        fp = os.path.join(self.__dirPath, fn)
+        if not fU.exists(fp):
+            fU.get(urlTarget, fp)
+        #
+        with gzip.open(fp, "rt", encoding="utf-8-sig") as ifh:
             line = ifh.readline()
             line = ifh.readline()
             line = ifh.readline()

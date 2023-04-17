@@ -45,7 +45,7 @@ class Scop2ClassificationProvider(StashableBase):
         self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
         if not useCache and not self.testCache():
-            ok = self.__fetchFromBackup()
+            ok = self.__fetchFromBackup(self.__fmt)
             if ok:
                 self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         #
