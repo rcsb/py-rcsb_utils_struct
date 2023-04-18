@@ -5,6 +5,7 @@
 #  Updates:
 #   10-Sep-2021 jdw split tree with type and class roots
 #   24-Feb-2022 dwp Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
+#   18-Apr-2023 aae Use "pickle" as default file format
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -45,7 +46,7 @@ class Scop2ClassificationProvider(StashableBase):
         self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
         if not useCache and not self.testCache():
-            ok = self.__fetchFromBackup()
+            ok = self.__fetchFromBackup(fmt=self.__fmt)
             if ok:
                 self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         #
@@ -176,12 +177,12 @@ class Scop2ClassificationProvider(StashableBase):
         tnL = self.__exportTreeNodeList(self.__nD, self.__pAD, self.__pBRootD)
         return tnL
 
-    def __getAssignmentFileName(self, fmt="json"):
+    def __getAssignmentFileName(self, fmt="pickle"):
         ext = "json" if fmt == "json" else "pic"
         fn = "scop2_domain_assignments.%s" % ext
         return fn
 
-    def __reload(self, useCache=True, fmt="json"):
+    def __reload(self, useCache=True, fmt="pickle"):
         nD = ntD = pAD = pBD = pBRootD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
@@ -236,7 +237,7 @@ class Scop2ClassificationProvider(StashableBase):
             #
         return nD, ntD, pAD, pBD, pBRootD, fD, sfD, sf2bD
 
-    def __fetchFromBackup(self, fmt="json"):
+    def __fetchFromBackup(self, fmt="pickle"):
         urlTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
         #
         fn = self.__getAssignmentFileName(fmt=fmt)
