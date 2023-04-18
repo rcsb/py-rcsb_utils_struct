@@ -197,7 +197,7 @@ class EcodClassificationProvider(StashableBase):
         # Get the version and remove commented lines
         ff = nmL[2].split()
         self.__version = ff[-1]
-        nmL = [l for l in nmL if not l.startswith("#")]
+        nmL = [line for line in nmL if not line.startswith("#")]
         #
         return nmL
 
