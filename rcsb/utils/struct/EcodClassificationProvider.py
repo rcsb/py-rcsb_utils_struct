@@ -15,7 +15,6 @@
 
 import collections
 import datetime
-import gzip
 import logging
 import os.path
 import sys
@@ -198,7 +197,7 @@ class EcodClassificationProvider(StashableBase):
         # Get the version and remove commented lines
         ff = nmL[2].split()
         self.__version = ff[-1]
-        nmL = nmL[5:]
+        nmL = [l for l in nmL if not l.startswith("#")]
         #
         return nmL
 
