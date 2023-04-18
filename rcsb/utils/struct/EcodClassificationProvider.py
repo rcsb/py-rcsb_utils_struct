@@ -4,6 +4,7 @@
 #
 #  Updates:
 #  16-Nov-2021 dwp Append additional ecod annotations for given entryId and chainId instead of overwriting
+#  18-Apr-2023 aae Get version from data list directly rather than opening file twice
 #
 ##
 """
@@ -166,7 +167,7 @@ class EcodClassificationProvider(StashableBase):
             logger.info("Fetch ECOD name and domain assignment data from primary data source %s", urlTarget)
             nmL = self.__fetchFromSource(urlTarget)
             if not nmL:
-                nmL = self.__fetchFromBackup(urlBackup)
+                nmL = self.__fetchFromSource(urlBackup)
             #
             logger.info("ECOD raw file length (%d)", len(nmL))
             ok = False
@@ -187,37 +188,17 @@ class EcodClassificationProvider(StashableBase):
         fn = fU.getFileName(urlTarget)
         fp = os.path.join(self.__dirPath, fn)
         if not fU.exists(fp):
-            fU.get(urlTarget, fp)
+            ok = fU.get(urlTarget, fp)
+            if not ok:
+                return None
         #
-        with open(fp, "r", encoding="utf-8") as ifh:
-            line = ifh.readline()
-            line = ifh.readline()
-            line = ifh.readline()
-            ff = line[:-1].split()
-            self.__version = ff[-1]
-        #
-        nmL = self.__mU.doImport(fp, fmt="list", uncomment=True)
+        nmL = self.__mU.doImport(fp, fmt="list", uncomment=False)
         fU.remove(fp)
         #
-        return nmL
-
-    def __fetchFromBackup(self, urlTarget):
-        """Fetch and unzip the classification names and domain assignments from the backup file."""
-        fU = FileUtil()
-        fn = fU.getFileName(urlTarget)
-        fp = os.path.join(self.__dirPath, fn)
-        if not fU.exists(fp):
-            fU.get(urlTarget, fp)
-        #
-        with gzip.open(fp, "rt", encoding="utf-8-sig") as ifh:
-            line = ifh.readline()
-            line = ifh.readline()
-            line = ifh.readline()
-            ff = line[:-1].split()
-            self.__version = ff[-1]
-        #
-        nmL = self.__mU.doImport(fp, fmt="list", uncomment=True)
-        fU.remove(fp)
+        # Get the version and remove commented lines
+        ff = nmL[2].split()
+        self.__version = ff[-1]
+        nmL = nmL[5:]
         #
         return nmL
 
