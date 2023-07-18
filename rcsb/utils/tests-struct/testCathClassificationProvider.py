@@ -42,7 +42,20 @@ class CathClassificationProviderTests(unittest.TestCase):
         """Load latest CATH data"""
         try:
             ccu = CathClassificationProvider(cachePath=self.__cachePath, useCache=False)
-            pdbIdL = [("10gs", "A"), ("4hrt", "A"), ("4hrt", "C"), ("4hrt", "E"), ("4hrt", "G"), ("1jwn", "A"), ("1jwn", "B"), ("1jwn", "C"), ("1jwn", "D")]
+            pdbIdL = [
+                ("10gs", "A"),
+                ("4hrt", "A"),
+                ("4hrt", "C"),
+                ("4hrt", "E"),
+                ("4hrt", "G"),
+                ("1jwn", "A"),
+                ("1jwn", "B"),
+                ("1jwn", "C"),
+                ("1jwn", "D"),
+                ('3ehu', 'B'),
+                ('3n93', 'B'),
+                ('4qsk', 'B'),
+            ]
             #
             for pdbTup in pdbIdL:
                 cathids = ccu.getCathIds(pdbTup[0], pdbTup[1])
@@ -50,6 +63,8 @@ class CathClassificationProviderTests(unittest.TestCase):
                 ranges = ccu.getCathResidueRanges(pdbTup[0], pdbTup[1])
                 versions = ccu.getCathVersions(pdbTup[0], pdbTup[1])
                 logger.info("pdbId %r authAsymId %r cathids %r domains %r ranges %r versions %r", pdbTup[0], pdbTup[1], cathids, domains, ranges, versions)
+                # Check for duplicate data items
+                self.assertTrue(len(ranges) == len(set(ranges)))
 
             #
         except Exception as e:

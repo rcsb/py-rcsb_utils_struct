@@ -391,20 +391,18 @@ class Scop2ClassificationProvider(StashableBase):
                     fKey = (pdbId, authAsymId)
                     fTup = (domFamilyId, tD["FA"], authAsymId, authSeqBeg, authSeqEnd)
                     if fKey not in fD:
-                        fD[fKey] = [fTup]
-                    else:
-                        if fTup not in fD[fKey]:
-                            fD[fKey].append(fTup)
+                        fD[fKey] = []
+                    if fTup not in fD[fKey]:
+                        fD[fKey].append(fTup)
                 pdbId = ff[6]
                 authAsymId, authSeqBeg, authSeqEnd = self.__parseAssignment(ff[7])
                 if authAsymId is not None:
                     sfKey = (pdbId, authAsymId)
                     sfTup = (domSuperFamilyId, tD["SF"], authAsymId, authSeqBeg, authSeqEnd)
                     if sfKey not in sfD:
-                        sfD[sfKey] = [sfTup]
-                    else:
-                        if sfTup not in sfD[sfKey]:
-                            sfD[sfKey].append(sfTup)
+                        sfD[sfKey] = []
+                    if sfTup not in sfD[sfKey]:
+                        sfD[sfKey].append(sfTup)
                 #
                 domToSfD[domSuperFamilyId] = tD["SF"]
             except Exception as e:
