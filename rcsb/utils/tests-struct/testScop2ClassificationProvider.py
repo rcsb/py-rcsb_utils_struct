@@ -43,7 +43,7 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
         try:
             scp = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=False)
 
-            pdbIdL = [("1pyt", "A"), ("4hrt", "A"), ("1pca", "A"), ("1kn6", "A"), ("1jqg", "A")]
+            pdbIdL = [("1pyt", "A"), ("4hrt", "A"), ("1pca", "A"), ("1kn6", "A"), ("1jqg", "A"), ("2qyo", "B")]
             #
             ver = scp.getVersion()
             self.assertTrue(ver is not None)
@@ -59,16 +59,16 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
                     self.assertTrue(lL)
                     nL = scp.getNameLineage(fId)
                     self.assertTrue(nL)
-                    logger.debug("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
-                    logger.debug("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
+                    logger.info("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
+                    logger.info("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
                 sfIds = scp.getSuperFamilyIds(pdbTup[0], pdbTup[1])
                 for sfId in sfIds:
                     lL = scp.getIdLineage(sfId)
                     self.assertTrue(lL)
                     nL = scp.getNameLineage(sfId)
                     self.assertTrue(nL)
-                    logger.debug("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
-                    logger.debug("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
+                    logger.info("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
+                    logger.info("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
                 #
                 fns = scp.getFamilyNames(pdbTup[0], pdbTup[1])
                 self.assertTrue(fns)
@@ -79,7 +79,10 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
                 self.assertTrue(fRanges)
                 sfRanges = scp.getSuperFamilyResidueRanges(pdbTup[0], pdbTup[1])
                 self.assertTrue(sfRanges)
-                logger.debug("pdbTup %r %r - %r %r %r %r %r %r", pdbTup[0], pdbTup[1], fIds, sfIds, fns, sfns, fRanges, sfRanges)
+                logger.info("pdbTup %r %r - %r %r %r %r %r %r", pdbTup[0], pdbTup[1], fIds, sfIds, fns, sfns, fRanges, sfRanges)
+                # Check for duplicate data items
+                self.assertTrue(len(fRanges) == len(set(fRanges)))
+                self.assertTrue(len(sfRanges) == len(set(sfRanges)))
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
