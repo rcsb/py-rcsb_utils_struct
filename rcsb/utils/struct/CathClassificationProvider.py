@@ -3,7 +3,8 @@
 #  Date:  3-Apr-2019 jdw
 #
 #  Updates:
-#  15-Jul-2021 jdw Update the constructor to common provider API conventions
+#   15-Jul-2021 jdw Update the constructor to common provider API conventions
+#   18-Jul-2023 dwp Resolve duplication issues with CATH residue range list
 ##
 """
   Extract CATH domain assignments, term descriptions and CATH classification hierarchy
@@ -294,7 +295,12 @@ class CathClassificationProvider(StashableBase):
         for domId, dTup in dD.items():
             pdbId = domId[:4]
             for rTup in dTup[1]:
-                pdbD.setdefault((pdbId, rTup[0]), []).append((dTup[0], domId, rTup, dTup[2]))
+                cKey = (pdbId, rTup[0])
+                cTup = (dTup[0], domId, rTup, dTup[2])
+                if cKey not in pdbD:
+                    pdbD[cKey] = []
+                if cTup not in pdbD[cKey]:
+                    pdbD[cKey].append(cTup)
         return pdbD
 
     def __exportTreeNodeList(self, nD):

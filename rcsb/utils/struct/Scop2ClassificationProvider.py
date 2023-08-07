@@ -6,6 +6,7 @@
 #   10-Sep-2021 jdw split tree with type and class roots
 #   24-Feb-2022 dwp Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
 #   18-Apr-2023 aae Use "pickle" as default file format
+#   18-Jul-2023 dwp Resolve duplication issues with Scop2 families list
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -387,11 +388,21 @@ class Scop2ClassificationProvider(StashableBase):
                 pdbId = ff[1]
                 authAsymId, authSeqBeg, authSeqEnd = self.__parseAssignment(ff[2])
                 if authAsymId is not None:
-                    fD.setdefault((pdbId, authAsymId), []).append((domFamilyId, tD["FA"], authAsymId, authSeqBeg, authSeqEnd))
+                    fKey = (pdbId, authAsymId)
+                    fTup = (domFamilyId, tD["FA"], authAsymId, authSeqBeg, authSeqEnd)
+                    if fKey not in fD:
+                        fD[fKey] = []
+                    if fTup not in fD[fKey]:
+                        fD[fKey].append(fTup)
                 pdbId = ff[6]
                 authAsymId, authSeqBeg, authSeqEnd = self.__parseAssignment(ff[7])
                 if authAsymId is not None:
-                    sfD.setdefault((pdbId, authAsymId), []).append((domSuperFamilyId, tD["SF"], authAsymId, authSeqBeg, authSeqEnd))
+                    sfKey = (pdbId, authAsymId)
+                    sfTup = (domSuperFamilyId, tD["SF"], authAsymId, authSeqBeg, authSeqEnd)
+                    if sfKey not in sfD:
+                        sfD[sfKey] = []
+                    if sfTup not in sfD[sfKey]:
+                        sfD[sfKey].append(sfTup)
                 #
                 domToSfD[domSuperFamilyId] = tD["SF"]
             except Exception as e:
