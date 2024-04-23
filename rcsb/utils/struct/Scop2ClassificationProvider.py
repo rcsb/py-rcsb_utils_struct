@@ -444,6 +444,9 @@ class Scop2ClassificationProvider(StashableBase):
           1o9x    A       8033045 P02768  197     388     197     388     221     412
         """
         sfD = {}
+        if len(scop2bL) == 0 or len(domToSfD) == 0:
+            logger.error("Empty list or dict (scop2bL len %r, domToSfD len %r)", len(scop2bL), len(domToSfD))
+            return sfD
         try:
             for rowD in scop2bL:
                 if rowD["SF_DOMID"] in domToSfD:
