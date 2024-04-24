@@ -49,12 +49,10 @@ class Scop2ClassificationProvider(StashableBase):
         # Temporarily turn off fetching of source data until new site is made available again
         # self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         # if not useCache and not self.testCache():
-        ok = self.__fetchFromBackup(fmt=self.__fmt)
-        if ok:
-            self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
-        else:
-            logger.error("Failed to re-fetch data from backup")
-        #
+        self.__fetchFromBackup(fmt=self.__fmt)
+        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        if not self.testCache():
+            logger.error("Failed to build SCOP2 CACHE")
 
     def testCache(self):
         logger.info(
@@ -254,6 +252,7 @@ class Scop2ClassificationProvider(StashableBase):
         logger.info("Fetching backup URL %r to local path %r", urlPath, assignmentPath)
         fU = FileUtil()
         ok = fU.get(urlPath, assignmentPath)
+        logger.info("Fetch status %r", ok)
         return ok
 
     def __fetchFromSource(self):
