@@ -7,6 +7,7 @@
 #   24-Feb-2022 dwp Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
 #   18-Apr-2023 aae Use "pickle" as default file format
 #   18-Jul-2023 dwp Resolve duplication issues with Scop2 families list
+#   23-Apr-2024 dwp SCOP2/SCOP2B website was shut down--turn off fetching of source data until/if new site is made available again
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -44,13 +45,14 @@ class Scop2ClassificationProvider(StashableBase):
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
-        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
-        if not useCache and not self.testCache():
-            ok = self.__fetchFromBackup(fmt=self.__fmt)
-            if ok:
-                self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
-        #
+        # Temporarily turn off fetching of source data until new site is made available again
+        # self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
+        # if not useCache and not self.testCache():
+        self.__fetchFromBackup(fmt=self.__fmt)
+        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        if not self.testCache():
+            logger.error("Failed to build SCOP2 CACHE")
 
     def testCache(self):
         logger.info(
@@ -244,11 +246,13 @@ class Scop2ClassificationProvider(StashableBase):
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         urlPath = os.path.join(urlTarget, fn)
-        self.__mU.mkdir(assignmentPath)
         #
-        logger.info("Using backup URL %r", urlPath)
+        logger.info("Creating directory %r", self.__dirPath)
+        self.__mU.mkdir(self.__dirPath)
+        logger.info("Fetching backup URL %r to local path %r", urlPath, assignmentPath)
         fU = FileUtil()
         ok = fU.get(urlPath, assignmentPath)
+        logger.info("Fetch status %r", ok)
         return ok
 
     def __fetchFromSource(self):
@@ -444,6 +448,9 @@ class Scop2ClassificationProvider(StashableBase):
           1o9x    A       8033045 P02768  197     388     197     388     221     412
         """
         sfD = {}
+        if len(scop2bL) == 0 or len(domToSfD) == 0:
+            logger.error("Empty list or dict (scop2bL len %r, domToSfD len %r)", len(scop2bL), len(domToSfD))
+            return sfD
         try:
             for rowD in scop2bL:
                 if rowD["SF_DOMID"] in domToSfD:
