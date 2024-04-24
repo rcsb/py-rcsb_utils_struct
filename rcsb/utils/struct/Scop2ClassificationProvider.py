@@ -7,6 +7,7 @@
 #   24-Feb-2022 dwp Resolve duplication issues with Scop2 tree node list, and fix parent ID lists for nodes with multiple parents
 #   18-Apr-2023 aae Use "pickle" as default file format
 #   18-Jul-2023 dwp Resolve duplication issues with Scop2 families list
+#   23-Apr-2024 dwp SCOP2/SCOP2B website was shut down--turn off fetching of source data until/if new site is made available again
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -44,12 +45,15 @@ class Scop2ClassificationProvider(StashableBase):
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
-        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         #
-        if not useCache and not self.testCache():
-            ok = self.__fetchFromBackup(fmt=self.__fmt)
-            if ok:
-                self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        # Temporarily turn off fetching of source data until new site is made available again
+        # self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
+        # if not useCache and not self.testCache():
+        ok = self.__fetchFromBackup(fmt=self.__fmt)
+        if ok:
+            self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        else:
+            logger.error("Failed to re-fetch data from backup")
         #
 
     def testCache(self):
