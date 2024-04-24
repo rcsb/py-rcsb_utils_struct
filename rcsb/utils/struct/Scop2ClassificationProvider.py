@@ -248,9 +248,10 @@ class Scop2ClassificationProvider(StashableBase):
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         urlPath = os.path.join(urlTarget, fn)
-        self.__mU.mkdir(assignmentPath)
         #
-        logger.info("Using backup URL %r", urlPath)
+        logger.info("Creating directory %r", self.__dirPath)
+        self.__mU.mkdir(self.__dirPath)
+        logger.info("Fetching backup URL %r to local path %r", urlPath, assignmentPath)
         fU = FileUtil()
         ok = fU.get(urlPath, assignmentPath)
         return ok
