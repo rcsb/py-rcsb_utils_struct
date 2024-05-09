@@ -8,6 +8,7 @@
 #   18-Apr-2023 aae Use "pickle" as default file format
 #   18-Jul-2023 dwp Resolve duplication issues with Scop2 families list
 #   23-Apr-2024 dwp SCOP2/SCOP2B website was shut down--turn off fetching of source data until/if new site is made available again
+#    9-May-2024 dwp Adjust reload process to not re-download fallback data upon every instantiation
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -16,7 +17,7 @@
 """
 
 import collections
-import datetime
+# import datetime
 import logging
 import os.path
 import sys
@@ -46,11 +47,12 @@ class Scop2ClassificationProvider(StashableBase):
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         #
+        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         # Temporarily turn off fetching of source data until new site is made available again
-        # self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
         # if not useCache and not self.testCache():
-        self.__fetchFromBackup(fmt=self.__fmt)
-        self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        #     ok = self.__fetchFromBackup(fmt=self.__fmt)
+        #     if ok:
+        #         self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
         if not self.testCache():
             logger.error("Failed to build SCOP2 CACHE")
 
@@ -193,51 +195,58 @@ class Scop2ClassificationProvider(StashableBase):
         #
         if useCache and self.__mU.exists(assignmentPath):
             sD = self.__mU.doImport(assignmentPath, fmt=fmt)
-            logger.debug("Domain name count %d", len(sD["names"]))
-            self.__version = sD["version"]
-            nD = sD["names"]
-            ntD = sD["nametypes"]
-            pAD = sD["parentsType"]
-            pBD = sD["parentsClass"]
-            pBRootD = sD["parentsClassRoot"]
-            fD = sD["families"]
-            sfD = sD["superfamilies"]
-            sf2bD = sD["superfamilies2b"]
+        else:
+            ok = self.__fetchFromBackup(fmt=fmt)
+            sD = self.__mU.doImport(assignmentPath, fmt=fmt)
+            if not ok and sD:
+                logger.error("failed to fetch from fallback - fetch status %r len(sD) %r", ok, len(sD))
+        #
+        logger.debug("Domain name count %d", len(sD["names"]))
+        self.__version = sD["version"]
+        nD = sD["names"]
+        ntD = sD["nametypes"]
+        pAD = sD["parentsType"]
+        pBD = sD["parentsClass"]
+        pBRootD = sD["parentsClassRoot"]
+        fD = sD["families"]
+        sfD = sD["superfamilies"]
+        sf2bD = sD["superfamilies2b"]
 
-        elif not useCache:
-            nmL, dmL, scop2bL, _ = self.__fetchFromSource()
-            #
-            ok = False
-            nD = self.__extractNames(nmL)
-            logger.info("Domain name dictionary (%d)", len(nD))
-            pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
-            #
-            logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
-            logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
-            logger.info("Domain node parent hierarchy (structural class root) (%d)", len(pBRootD))
-            logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
-            #
-            sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
-            logger.info("SCOP2B SF domain assignments (%d)", len(sf2bD))
-            #
-            tS = datetime.datetime.now().isoformat()
-            # vS = datetime.datetime.now().strftime("%Y-%m-%d")
-            vS = self.__version
-            sD = {
-                "version": vS,
-                "created": tS,
-                "names": nD,
-                "nametypes": ntD,
-                "parentsType": pAD,
-                "parentsClass": pBD,
-                "parentsClassRoot": pBRootD,
-                "families": fD,
-                "superfamilies": sfD,
-                "superfamilies2b": sf2bD
-            }
-            ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
-            logger.info("Cache save status %r", ok)
-            #
+        # Temporarily turn off fetching of source data until new site is made available again
+        # elif not useCache:
+        #     nmL, dmL, scop2bL, _ = self.__fetchFromSource()
+        #     #
+        #     ok = False
+        #     nD = self.__extractNames(nmL)
+        #     logger.info("Domain name dictionary (%d)", len(nD))
+        #     pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
+        #     #
+        #     logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
+        #     logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
+        #     logger.info("Domain node parent hierarchy (structural class root) (%d)", len(pBRootD))
+        #     logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
+        #     #
+        #     sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
+        #     logger.info("SCOP2B SF domain assignments (%d)", len(sf2bD))
+        #     #
+        #     tS = datetime.datetime.now().isoformat()
+        #     # vS = datetime.datetime.now().strftime("%Y-%m-%d")
+        #     vS = self.__version
+        #     sD = {
+        #         "version": vS,
+        #         "created": tS,
+        #         "names": nD,
+        #         "nametypes": ntD,
+        #         "parentsType": pAD,
+        #         "parentsClass": pBD,
+        #         "parentsClassRoot": pBRootD,
+        #         "families": fD,
+        #         "superfamilies": sfD,
+        #         "superfamilies2b": sf2bD
+        #     }
+        #     ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
+        #     logger.info("Cache save status %r", ok)
+
         return nD, ntD, pAD, pBD, pBRootD, fD, sfD, sf2bD
 
     def __fetchFromBackup(self, fmt="pickle"):

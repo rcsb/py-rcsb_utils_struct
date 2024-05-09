@@ -37,3 +37,4 @@
  18-Apr-2023    V0.44 Fix Ecod and Scop2 provider fall-back file import
  18-Jul-2023    V0.45 Resolve duplication issues with Scop2 families and CATH residue range lists
  24-Apr-2024    V0.46 Turn off fetching of source SCOP2/SCOP2B data following shutdown of host website; rely on latest fallback instead
+  9-May-2024    V0.47 Tweak to above update (V0.46); update setuptools config
