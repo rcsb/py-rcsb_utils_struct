@@ -38,3 +38,4 @@
  18-Jul-2023    V0.45 Resolve duplication issues with Scop2 families and CATH residue range lists
  24-Apr-2024    V0.46 Turn off fetching of source SCOP2/SCOP2B data following shutdown of host website; rely on latest fallback instead
   9-May-2024    V0.47 Tweak to above update (V0.46); update setuptools config
+ 10-Jun-2024    V0.48 Update SCOP2 source to new website, and restructure SCOP2 data reloading/building steps
