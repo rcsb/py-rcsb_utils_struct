@@ -44,8 +44,8 @@ class Scop2ClassificationProvider(StashableBase):
         self.__useCache = useCache
         super(Scop2ClassificationProvider, self).__init__(self.__cachePath, [dirName])
         #
-        self.__urlTargetScop2 = "https://www.ebi.ac.uk/pdbe/scop/files"
-        self.__urlTargetSifts = "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"  # JDW note cert issues with this site
+        self.__urlTargetScop2 = kwargs.get("urlTargetScop2", "https://www.ebi.ac.uk/pdbe/scop/files")
+        self.__urlTargetSifts = kwargs.get("urlTargetSifts", "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv")  # JDW note cert issues with this site
         self.__urlFallbackTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
         #
         self.__version = "latest"
@@ -290,11 +290,15 @@ class Scop2ClassificationProvider(StashableBase):
         fn = "scop-des-latest.txt"
         url = os.path.join(self.__urlTargetScop2, fn)
         desL = self.__mU.doImport(url, fmt="list", uncomment=True, encoding=encoding)
+        if not desL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(desL))
         #
         fn = "scop-cla-latest.txt"
         url = os.path.join(self.__urlTargetScop2, fn)
         claL = self.__mU.doImport(url, fmt="list", uncomment=True, encoding=encoding)
+        if not claL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(claL))
         #
         headerLines = self.__mU.doImport(url, fmt="list", uncomment=False, encoding=encoding)
@@ -303,11 +307,15 @@ class Scop2ClassificationProvider(StashableBase):
         fn = "pdb_chain_scop2b_sf_uniprot.tsv.gz"
         url = os.path.join(self.__urlTargetSifts, fn)
         scop2bL = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)
+        if not scop2bL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(scop2bL))
         #
         fn = "pdb_chain_scop2_uniprot.tsv.gz"
         url = os.path.join(self.__urlTargetSifts, fn)
         scop2L = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)
+        if not scop2L:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(scop2bL))
         #
         return desL, claL, scop2bL, scop2L
