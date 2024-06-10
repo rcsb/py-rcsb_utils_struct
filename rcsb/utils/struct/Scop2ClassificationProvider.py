@@ -9,6 +9,7 @@
 #   18-Jul-2023 dwp Resolve duplication issues with Scop2 families list
 #   23-Apr-2024 dwp SCOP2/SCOP2B website was shut down--turn off fetching of source data until/if new site is made available again
 #    9-May-2024 dwp Adjust reload process to not re-download fallback data upon every instantiation
+#   10-Jun-2024 dwp Update SCOP2 source to new website; restructure data reloading/building steps
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -17,7 +18,7 @@
 """
 
 import collections
-# import datetime
+import datetime
 import logging
 import os.path
 import sys
@@ -43,16 +44,16 @@ class Scop2ClassificationProvider(StashableBase):
         self.__useCache = useCache
         super(Scop2ClassificationProvider, self).__init__(self.__cachePath, [dirName])
         #
+        self.__urlTargetScop2 = kwargs.get("urlTargetScop2", "https://www.ebi.ac.uk/pdbe/scop/files")
+        self.__urlTargetSifts = kwargs.get("urlTargetSifts", "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv")  # JDW note cert issues with this site
+        self.__urlFallbackTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
+        #
         self.__version = "latest"
         self.__fmt = "pickle"
         self.__mU = MarshalUtil(workPath=self.__dirPath)
         #
         self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=self.__useCache, fmt=self.__fmt)
-        # Temporarily turn off fetching of source data until new site is made available again
-        # if not useCache and not self.testCache():
-        #     ok = self.__fetchFromBackup(fmt=self.__fmt)
-        #     if ok:
-        #         self.__nD, self.__ntD, self.__pAD, self.__pBD, self.__pBRootD, self.__fD, self.__sfD, self.__sf2bD = self.__reload(useCache=True, fmt=self.__fmt)
+        #
         if not self.testCache():
             logger.error("Failed to build SCOP2 CACHE")
 
@@ -188,7 +189,7 @@ class Scop2ClassificationProvider(StashableBase):
         return fn
 
     def __reload(self, useCache=True, fmt="pickle"):
-        nD = ntD = pAD = pBD = pBRootD = fD = sfD = sf2bD = {}
+        sD = nD = ntD = pAD = pBD = pBRootD = fD = sfD = sf2bD = {}
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
         self.__mU.mkdir(self.__dirPath)
@@ -196,10 +197,7 @@ class Scop2ClassificationProvider(StashableBase):
         if useCache and self.__mU.exists(assignmentPath):
             sD = self.__mU.doImport(assignmentPath, fmt=fmt)
         else:
-            ok = self.__fetchFromBackup(fmt=fmt)
-            sD = self.__mU.doImport(assignmentPath, fmt=fmt)
-            if not ok and sD:
-                logger.error("failed to fetch from fallback - fetch status %r len(sD) %r", ok, len(sD))
+            sD = self.__rebuildData(assignmentPath, fmt=fmt)
         #
         logger.debug("Domain name count %d", len(sD["names"]))
         self.__version = sD["version"]
@@ -212,49 +210,59 @@ class Scop2ClassificationProvider(StashableBase):
         sfD = sD["superfamilies"]
         sf2bD = sD["superfamilies2b"]
 
-        # Temporarily turn off fetching of source data until new site is made available again
-        # elif not useCache:
-        #     nmL, dmL, scop2bL, _ = self.__fetchFromSource()
-        #     #
-        #     ok = False
-        #     nD = self.__extractNames(nmL)
-        #     logger.info("Domain name dictionary (%d)", len(nD))
-        #     pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
-        #     #
-        #     logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
-        #     logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
-        #     logger.info("Domain node parent hierarchy (structural class root) (%d)", len(pBRootD))
-        #     logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
-        #     #
-        #     sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
-        #     logger.info("SCOP2B SF domain assignments (%d)", len(sf2bD))
-        #     #
-        #     tS = datetime.datetime.now().isoformat()
-        #     # vS = datetime.datetime.now().strftime("%Y-%m-%d")
-        #     vS = self.__version
-        #     sD = {
-        #         "version": vS,
-        #         "created": tS,
-        #         "names": nD,
-        #         "nametypes": ntD,
-        #         "parentsType": pAD,
-        #         "parentsClass": pBD,
-        #         "parentsClassRoot": pBRootD,
-        #         "families": fD,
-        #         "superfamilies": sfD,
-        #         "superfamilies2b": sf2bD
-        #     }
-        #     ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
-        #     logger.info("Cache save status %r", ok)
-
         return nD, ntD, pAD, pBD, pBRootD, fD, sfD, sf2bD
 
-    def __fetchFromBackup(self, fmt="pickle"):
-        urlTarget = "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP2"
+    def __rebuildData(self, assignmentPath, fmt="pickle"):
+        sD = {}
+        try:
+            nmL, dmL, scop2bL, _ = self.__fetchFromSource()
+            #
+            ok = False
+            nD = self.__extractNames(nmL)
+            logger.info("Domain name dictionary (%d)", len(nD))
+            pAD, pBD, pBRootD, ntD, fD, sfD, domToSfD = self.__extractDomainHierarchy(dmL)
+            #
+            logger.info("Domain node parent hierarchy (protein type) (%d)", len(pAD))
+            logger.info("Domain node parent hierarchy (structural class) (%d)", len(pBD))
+            logger.info("Domain node parent hierarchy (structural class root) (%d)", len(pBRootD))
+            logger.info("SCOP2 core domain assignments (family %d) (sf %d)", len(fD), len(sfD))
+            #
+            sf2bD = self.__extractScop2bSuperFamilyAssignments(scop2bL, domToSfD)
+            logger.info("SCOP2B SF domain assignments (%d)", len(sf2bD))
+            #
+            tS = datetime.datetime.now().isoformat()
+            # vS = datetime.datetime.now().strftime("%Y-%m-%d")
+            vS = self.__version
+            sD = {
+                "version": vS,
+                "created": tS,
+                "names": nD,
+                "nametypes": ntD,
+                "parentsType": pAD,
+                "parentsClass": pBD,
+                "parentsClassRoot": pBRootD,
+                "families": fD,
+                "superfamilies": sfD,
+                "superfamilies2b": sf2bD
+            }
+            ok = self.__mU.doExport(assignmentPath, sD, fmt=fmt, indent=3)
+            logger.info("Cache save status %r", ok)
+        except Exception as e:
+            logger.exception("Failing rebuild from source with: %s", str(e))
         #
+        if not sD:
+            logger.info("Fetching data from backup")
+            ok = self.__fetchFromBackup(fmt=fmt)
+            sD = self.__mU.doImport(assignmentPath, fmt=fmt)
+            if not ok and sD:
+                logger.error("failed to fetch from fallback - fetch status %r len(sD) %r", ok, len(sD))
+        #
+        return sD
+
+    def __fetchFromBackup(self, fmt="pickle"):
         fn = self.__getAssignmentFileName(fmt=fmt)
         assignmentPath = os.path.join(self.__dirPath, fn)
-        urlPath = os.path.join(urlTarget, fn)
+        urlPath = os.path.join(self.__urlFallbackTarget, fn)
         #
         logger.info("Creating directory %r", self.__dirPath)
         self.__mU.mkdir(self.__dirPath)
@@ -268,40 +276,46 @@ class Scop2ClassificationProvider(StashableBase):
         """Fetch the classification names and domain assignments from SCOP2 and SCOP2B resources.
 
         SCOP2 domain names:
-            https://scop.mrc-lmb.cam.ac.uk/files/scop-des-latest.txt
+            https://www.ebi.ac.uk/pdbe/scop/files/scop-des-latest.txt
 
         SCOP2 domain hierarchy:
-            https://scop.mrc-lmb.cam.ac.uk/files/scop-cla-latest.txt
+            https://www.ebi.ac.uk/pdbe/scop/files/scop-cla-latest.txt
 
         SIFTS extrapolated SCOP2 and SCOP2B assignments:
             https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2b_sf_uniprot.tsv.gz
             https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_scop2_uniprot.tsv.gz
 
         """
-        urlTargetScop2 = "https://scop.mrc-lmb.cam.ac.uk/files"
         encoding = "utf-8-sig" if sys.version_info[0] > 2 else "ascii"
         fn = "scop-des-latest.txt"
-        url = os.path.join(urlTargetScop2, fn)
+        url = os.path.join(self.__urlTargetScop2, fn)
         desL = self.__mU.doImport(url, fmt="list", uncomment=True, encoding=encoding)
+        if not desL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(desL))
         #
         fn = "scop-cla-latest.txt"
-        url = os.path.join(urlTargetScop2, fn)
+        url = os.path.join(self.__urlTargetScop2, fn)
         claL = self.__mU.doImport(url, fmt="list", uncomment=True, encoding=encoding)
+        if not claL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(claL))
         #
         headerLines = self.__mU.doImport(url, fmt="list", uncomment=False, encoding=encoding)
         self.__version = headerLines[0].split(" ")[3] if headerLines else "2021-05-27"
-        # JDW note cert issues with this site
-        urlTargetSifts = "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv"
+        #
         fn = "pdb_chain_scop2b_sf_uniprot.tsv.gz"
-        url = os.path.join(urlTargetSifts, fn)
+        url = os.path.join(self.__urlTargetSifts, fn)
         scop2bL = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)
+        if not scop2bL:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(scop2bL))
         #
         fn = "pdb_chain_scop2_uniprot.tsv.gz"
-        url = os.path.join(urlTargetSifts, fn)
+        url = os.path.join(self.__urlTargetSifts, fn)
         scop2L = self.__mU.doImport(url, fmt="tdd", rowFormat="dict", uncomment=True, encoding=encoding)
+        if not scop2L:
+            raise ValueError("Failed to fetch or load %r" % url)
         logger.info("Fetched URL is %s len %d", url, len(scop2bL))
         #
         return desL, claL, scop2bL, scop2L

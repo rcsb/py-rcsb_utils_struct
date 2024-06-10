@@ -118,6 +118,35 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testGetScop2FallbackData(self):
+        """Test use of fallback data"""
+        try:
+            scp = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=False, urlTargetScop2="https://rcsb.org/t")
+            pdbIdL = [("5oba", "B"), ("6s61", "X")]
+            #
+            ver = scp.getVersion()
+            self.assertTrue(ver is not None)
+            logger.info("SCOP2 version %r", ver)
+            #
+            for pdbTup in pdbIdL:
+                sfIds = scp.getSuperFamilyIds2B(pdbTup[0], pdbTup[1])
+                self.assertTrue(sfIds)
+                for sfId in sfIds:
+                    lL = scp.getIdLineage(sfId)
+                    self.assertTrue(lL)
+                    nL = scp.getNameLineage(sfId)
+                    self.assertTrue(nL)
+                    logger.info("pdbTup %r %r lineage ids   %r", pdbTup[0], pdbTup[1], lL)
+                    logger.info("pdbTup %r %r lineage names %r", pdbTup[0], pdbTup[1], nL)
+                #
+                sfns = scp.getSuperFamilyNames2B(pdbTup[0], pdbTup[1])
+                sfRanges = scp.getSuperFamilyResidueRanges2B(pdbTup[0], pdbTup[1])
+                logger.debug("pdbTup %r %r - %r %r %r", pdbTup[0], pdbTup[1], sfIds, sfns, sfRanges)
+
+        except Exception as e:
+            logger.exception("Failing with %s", str(e))
+            self.fail()
+
     def testScop2TreeMethods(self):
         """Test SCOP2 tree methods --"""
         try:
@@ -137,6 +166,7 @@ def scop2ProviderSuite():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(Scop2ClassificationProviderTests("testAGetScop2Data"))
     suiteSelect.addTest(Scop2ClassificationProviderTests("testGetScop2BData"))
+    suiteSelect.addTest(Scop2ClassificationProviderTests("testGetScop2FallbackData"))
     suiteSelect.addTest(Scop2ClassificationProviderTests("testScop2TreeMethods"))
     return suiteSelect
 
