@@ -39,3 +39,4 @@
  24-Apr-2024    V0.46 Turn off fetching of source SCOP2/SCOP2B data following shutdown of host website; rely on latest fallback instead
   9-May-2024    V0.47 Tweak to above update (V0.46); update setuptools config
  10-Jun-2024    V0.48 Update SCOP2 source to new website, and restructure SCOP2 data reloading/building steps
+  9-Dec-2024    V0.49 Update Azure pipelines to use latest macOS, Ubuntu, and python 3.10
