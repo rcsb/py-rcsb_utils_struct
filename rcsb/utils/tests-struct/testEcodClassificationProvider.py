@@ -14,8 +14,10 @@ import os
 import time
 import unittest
 
-from rcsb.utils.struct import __version__
+from importlib.metadata import version as get_package_version
 from rcsb.utils.struct.EcodClassificationProvider import EcodClassificationProvider
+
+__version__ = get_package_version("rcsb.utils.struct")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(HERE))
