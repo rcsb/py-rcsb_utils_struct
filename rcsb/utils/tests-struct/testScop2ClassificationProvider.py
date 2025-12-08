@@ -14,9 +14,11 @@ import os
 import time
 import unittest
 
+from importlib.metadata import version as get_package_version
 from rcsb.utils.io.MarshalUtil import MarshalUtil
-from rcsb.utils.struct import __version__
 from rcsb.utils.struct.Scop2ClassificationProvider import Scop2ClassificationProvider
+
+__version__ = get_package_version("rcsb.utils.struct")
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 TOPDIR = os.path.dirname(os.path.dirname(HERE))
