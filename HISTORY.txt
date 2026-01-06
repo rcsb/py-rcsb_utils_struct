@@ -41,3 +41,4 @@
  10-Jun-2024    V0.48 Update SCOP2 source to new website, and restructure SCOP2 data reloading/building steps
   9-Dec-2024    V0.49 Update Azure pipelines to use latest macOS, Ubuntu, and python 3.10
   8-Dec-2025    V0.50 Switch from setuptools to hatch build system and update pipelines to Python 3.13
+  6-Jan-2026    V0.51 Update ScopClassificationProvider source URL
