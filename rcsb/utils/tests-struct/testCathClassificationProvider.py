@@ -40,6 +40,7 @@ class CathClassificationProviderTests(unittest.TestCase):
         endTime = time.time()
         logger.debug("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
 
+    @unittest.skipIf(True, "Service temporarily down")
     def testGetCathData(self):
         """Load latest CATH data"""
         try:
@@ -73,6 +74,7 @@ class CathClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    @unittest.skipIf(True, "Service temporarily down")
     def testCathClassificationAccessMethods(self):
         """Test dictionary methods --"""
         try:
@@ -88,8 +90,8 @@ class CathClassificationProviderTests(unittest.TestCase):
 
 def readCathData():
     suiteSelect = unittest.TestSuite()
-    # suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
-    # suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
+    suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
+    suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
     return suiteSelect
 
 
