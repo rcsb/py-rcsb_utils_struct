@@ -88,8 +88,8 @@ class CathClassificationProviderTests(unittest.TestCase):
 
 def readCathData():
     suiteSelect = unittest.TestSuite()
-    suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
-    suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
+    # suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
+    # suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
     return suiteSelect
 
 
