@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rcsb.utils.struct"
 description = "RCSB Python utility classes for accessing PDB primary structure data and features associated with these data"
-version = "0.50"
+version = "0.51"
 readme = "README.md"
 authors = [
     { name="John Westbrook", email="john.westbrook@rcsb.org" }

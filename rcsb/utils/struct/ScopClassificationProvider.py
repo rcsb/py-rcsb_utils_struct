@@ -4,6 +4,7 @@
 #
 #  Updated:
 #  24-Apr-2019  jdw Exclude the root node from the exported tree node list
+#   6-Jan-2026  dwp Change base URL to Zenodo (temporary downtime at scop.berkeley.edu)
 ##
 """
   Extract SCOPe assignments, term descriptions and SCOP classifications
@@ -46,7 +47,8 @@ class ScopClassificationProvider(StashableBase):
         # self.__version = kwargs.get("scopVersion", "2.07-2020-01-23")
         # self.__version = kwargs.get("scopVersion", "2.07-2020-05-07")
         # self.__version = kwargs.get("scopVersion", "2.07-2021-07-07")
-        urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/parse")
+        urlTarget = kwargs.get("scopTargetUrl", "https://zenodo.org/records/5829561/files")
+        # urlTarget = kwargs.get("scopTargetUrl", "http://scop.berkeley.edu/downloads/parse")
         self.__version = kwargs.get("scopVersion", "2.08-stable")
         #
         urlBackupPath = kwargs.get("scopUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/SCOP")
@@ -195,6 +197,7 @@ class ScopClassificationProvider(StashableBase):
                 dir.hie.scope.2.07-2019-03-07.txt
         """
         encoding = "utf-8-sig" if sys.version_info[0] > 2 else "ascii"
+        #
         fn = "dir.des.scope.%s.txt" % version
         url = os.path.join(urlTarget, fn)
         desL = self.__mU.doImport(url, fmt="tdd", rowFormat="list", uncomment=True, encoding=encoding)
