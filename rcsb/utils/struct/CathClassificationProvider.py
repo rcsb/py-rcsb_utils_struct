@@ -5,6 +5,7 @@
 #  Updates:
 #   15-Jul-2021 jdw Update the constructor to common provider API conventions
 #   18-Jul-2023 dwp Resolve duplication issues with CATH residue range list
+#   28-Jan-2026 dwp Switch to HTTPS
 ##
 """
   Extract CATH domain assignments, term descriptions and CATH classification hierarchy
@@ -43,8 +44,8 @@ class CathClassificationProvider(StashableBase):
         super(CathClassificationProvider, self).__init__(self.__cachePath, [self.__dirName])
         #
         useCache = kwargs.get("useCache", True)
-        urlTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/newest")
-        urlFallbackTarget = kwargs.get("cathTargetUrl", "http://download.cathdb.info/cath/releases/daily-release/archive")
+        urlTarget = kwargs.get("cathTargetUrl", "https://download.cathdb.info/cath/releases/daily-release/newest")
+        urlFallbackTarget = kwargs.get("cathTargetUrl", "https://download.cathdb.info/cath/releases/daily-release/archive")
         # no trailing /
         urlBackupPath = kwargs.get("cathUrlBackupPath", "https://raw.githubusercontent.com/rcsb/py-rcsb_exdb_assets/master/fall_back/CATH")
         #
