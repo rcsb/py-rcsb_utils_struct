@@ -5,6 +5,7 @@
 #  Updates:
 #  16-Nov-2021 dwp Append additional ecod annotations for given entryId and chainId instead of overwriting
 #  18-Apr-2023 aae Get version from data list directly rather than opening file twice
+#  18-Mar-2026 dwp Re-work provider to handle new data format and improve robustness
 #
 ##
 """
@@ -191,14 +192,33 @@ class EcodClassificationProvider(StashableBase):
             if not ok:
                 return None
         #
-        nmL = self.__mU.doImport(fp, fmt="list", uncomment=False)
+        nmdLUnfiltered = self.__mU.doImport(fp, fmt="tdd", rowFormat='dict')
+        keys_to_keep = {
+            "ecod_domain_id",
+            "pdb",
+            "chain",
+            "pdb_range",
+            "architecture_name",
+            "x_name",
+            "h_name",
+            "t_name",
+            "f_name",
+        }
+
+        nmL = [{k: d[k].replace('"', "").strip() for k in keys_to_keep if k in d} for d in nmdLUnfiltered]
+
+        with open(fp, encoding="utf-8") as f:
+            version = next(
+                (line.partition(":")[2].strip() for line in f if line.startswith("# Version:")),
+                None,
+            )
+        if version is None:
+            logger.error("No version line found in file %r. Setting to 'Undefined'", fp)
+            version = "Undefined"
+        logger.info("Parsed version from header %r", version)
+        self.__version = version
+
         fU.remove(fp)
-        #
-        # Get the version and remove commented lines
-        ff = nmL[2].split()
-        self.__version = ff[-1]
-        nmL = [line for line in nmL if not line.startswith("#")]
-        #
         return nmL
 
     def __extractDomainHierarchy(self, nmL):
@@ -222,32 +242,41 @@ class EcodClassificationProvider(StashableBase):
         #
         logger.info("Length of input ECOD name list %d", len(nmL))
         for nm in nmL:
-            ff = nm.split("\t")
-            # uId = ff[0]
             # ecodId is the linkable identifier -
-            ecodId = ff[1]
-            entryId = ff[4].lower()
-            authAsymId = ff[5]
-            resRange = ff[6]
+            ecodId = nm["ecod_domain_id"]
+            entryId = nm["pdb"].lower()
+            if not entryId or entryId == "":
+                continue
+            authAsymId = nm["chain"]
+            resRange = nm["pdb_range"]
             #
             #  There are no unique identifiers published for the internal elements of the hierarchy
             #   so these are assigned here similar to scop -   There are also many unnamed nodes
             #   that are conventionally filled in from the leaf levels of the tree...
             #  {"A": "Architecture", "X": "Possible Homology", "H": "Homology", "T": "Topology", "F": "Family"}
-            aGroupOrg = "A: " + ff[9].replace('"', "")
-            xGroupOrg = "X: " + ff[10].replace('"', "")
-            hGroupOrg = "H: " + ff[11].replace('"', "")
-            tGroupOrg = "T: " + ff[12].replace('"', "")
-            fGroupOrg = "F: " + ff[13].replace('"', "")
-            if hGroupOrg == "H: NO_H_NAME":
-                # hGroupOrg = tGroupOrg  + "|(NO_H)"
-                hGroupOrg = "H: " + ff[12].replace('"', "") + " (From Topology)" + "|(NO_H)"
-            if xGroupOrg == "X: NO_X_NAME":
-                if ff[11].replace('"', "") == "NO_H_NAME":
-                    # xGroupOrg = hGroupOrg + "|(NO_X)"
-                    xGroupOrg = "X: " + ff[12].replace('"', "") + " (From Topology)" + "|(NO_X)"
+            #
+            aGroupOrg = "A: " + nm.get("architecture_name")
+            if not nm.get("architecture_name"):
+                logger.debug("ecodId %r entryId %r has no architecture group - skipping", ecodId, entryId)
+                continue
+            xGroupOrg = "X: " + nm.get("x_name")
+            hGroupOrg = "H: " + nm.get("h_name")
+            tGroupOrg = "T: " + nm.get("t_name")
+            fGroupOrg = "F: " + nm.get("f_name")
+            if not nm.get("h_name"):
+                if nm.get("t_name"):
+                    hGroupOrg = "H: " + nm.get("t_name") + " (From Topology)" + "|(NO_H)"
                 else:
-                    xGroupOrg = "X: " + ff[11].replace('"', "") + " (From Homology)" + "|(NO_X)"
+                    logger.info("ecodId %r entryId %r has no H group or T group - skipping", ecodId, entryId)
+                    continue
+            if not nm.get("x_name"):
+                if nm.get("t_name"):
+                    xGroupOrg = "X: " + nm.get("t_name") + " (From Topology)" + "|(NO_X)"
+                elif nm.get("h_name"):
+                    xGroupOrg = "X: " + nm.get("h_name") + " (From Homology)" + "|(NO_X)"
+                else:
+                    logger.info("ecodId %r entryId %r has no X, T, or H group - skipping", ecodId, entryId)
+                    continue
                 #
             fGroupOrg = fGroupOrg if fGroupOrg != "F_UNCLASSIFIED" else "Unmapped domain of " + tGroupOrg
             #
@@ -264,6 +293,7 @@ class EcodClassificationProvider(StashableBase):
             hD.setdefault("H", set()).add(hGroup)
             hD.setdefault("T", set()).add(tGroup)
             hD.setdefault("F", set()).add(fGroup)
+            #
             aId = 100000 + len(hD["A"])
             xId = 200000 + len(hD["X"])
             hId = 300000 + len(hD["H"])
