@@ -57,7 +57,7 @@ class EcodClassificationProviderTests(unittest.TestCase):
                     self.assertTrue(nm)
                     nmT = ecodP.getNameType(fId)
                     self.assertEqual(nmT, "Family")
-                    logger.debug("pdbTup %r %r fId: %r name: %r type: %r", pdbTup[0], pdbTup[1], fId, nmT, nm)
+                    logger.info("pdbTup %r %r fId: %r name: %r type: %r", pdbTup[0], pdbTup[1], fId, nmT, nm)
                     #
                     lL = ecodP.getIdLineage(fId)
                     self.assertTrue(lL)
