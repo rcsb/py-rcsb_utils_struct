@@ -5,7 +5,7 @@
 #  Updates:
 #  16-Nov-2021 dwp Append additional ecod annotations for given entryId and chainId instead of overwriting
 #  18-Apr-2023 aae Get version from data list directly rather than opening file twice
-#  17-Mar-2026 dwp Re-work provider to handle new data format and improve robustness
+#  18-Mar-2026 dwp Re-work provider to handle new data format and improve robustness
 #
 ##
 """
@@ -206,15 +206,22 @@ class EcodClassificationProvider(StashableBase):
         }
 
         nmL = [{k: d[k].replace('"', "").strip() for k in keys_to_keep if k in d} for d in nmdLUnfiltered]
-        with open(fp, "r") as rf:
-            self.__version = next(line.partition(":")[2].strip() for line in rf if line.startswith("# Version:"))
-            print(self.__version)
+
+        with open(fp, encoding="utf-8") as f:
+            version = next(
+                (line.partition(":")[2].strip() for line in f if line.startswith("# Version:")),
+                None,
+            )
+        if version is None:
+            logger.error("No version line found in file %r. Setting to 'Undefined'", fp)
+            version = "Undefined"
+        logger.info("Parsed version from header %r", version)
+        self.__version = version
 
         fU.remove(fp)
         return nmL
 
     def __extractDomainHierarchy(self, nmL):
-        # http://prodata.swmed.edu/ecod/distributions/ecod.v294.hierarchy.txt
         """
         #/data/ecod/database_versions/v280/ecod.develop280.domains.txt
         #ECOD version develop280
@@ -247,7 +254,7 @@ class EcodClassificationProvider(StashableBase):
             #   so these are assigned here similar to scop -   There are also many unnamed nodes
             #   that are conventionally filled in from the leaf levels of the tree...
             #  {"A": "Architecture", "X": "Possible Homology", "H": "Homology", "T": "Topology", "F": "Family"}
-
+            #
             aGroupOrg = "A: " + nm.get("architecture_name")
             if not nm.get("architecture_name"):
                 logger.debug("ecodId %r entryId %r has no architecture group - skipping", ecodId, entryId)
@@ -263,7 +270,7 @@ class EcodClassificationProvider(StashableBase):
                     logger.info("ecodId %r entryId %r has no H group or T group - skipping", ecodId, entryId)
                     continue
             if not nm.get("x_name"):
-                if nm.get("h_name"):
+                if nm.get("t_name"):
                     xGroupOrg = "X: " + nm.get("t_name") + " (From Topology)" + "|(NO_X)"
                 elif nm.get("h_name"):
                     xGroupOrg = "X: " + nm.get("h_name") + " (From Homology)" + "|(NO_X)"
@@ -286,7 +293,7 @@ class EcodClassificationProvider(StashableBase):
             hD.setdefault("H", set()).add(hGroup)
             hD.setdefault("T", set()).add(tGroup)
             hD.setdefault("F", set()).add(fGroup)
-            # This ID assignment works by checking the current total number of unique "A" (or "X", etc.) assignments, and 
+            #
             aId = 100000 + len(hD["A"])
             xId = 200000 + len(hD["X"])
             hId = 300000 + len(hD["H"])
