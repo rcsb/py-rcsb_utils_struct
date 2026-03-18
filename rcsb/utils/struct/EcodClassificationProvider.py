@@ -5,7 +5,7 @@
 #  Updates:
 #  16-Nov-2021 dwp Append additional ecod annotations for given entryId and chainId instead of overwriting
 #  18-Apr-2023 aae Get version from data list directly rather than opening file twice
-#  17-Mar-2026 dwp Re-work provider to handle new data format and improve robustness
+#  18-Mar-2026 dwp Re-work provider to handle new data format and improve robustness
 #
 ##
 """
@@ -219,9 +219,10 @@ class EcodClassificationProvider(StashableBase):
                 None,
             )
         if version is None:
-            logger.error("No version line found in file %r", fp)
-        self.__version = version
+            logger.error("No version line found in file %r. Setting to 'Undefined'", fp)
+            version = "Undefined"
         logger.info("Parsed version from header %r", version)
+        self.__version = version
 
         fU.remove(fp)
         return nmL
@@ -294,9 +295,6 @@ class EcodClassificationProvider(StashableBase):
             if not aN:
                 logger.debug("ecodId %r entryId %r has no architecture group - skipping", ecodId, entryId)
                 continue
-
-            if fN:
-
 
             aId = letterNameToIdD.get(f"A: {aN}")
             xId = letterNameToIdD.get(f"X: {xN}") if xN else None
