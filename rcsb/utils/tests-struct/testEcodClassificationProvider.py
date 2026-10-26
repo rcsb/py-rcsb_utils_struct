@@ -3,7 +3,7 @@
 # Date:    23-Jun-2021  JDW
 #
 # Updates:
-#  26-Oct-2026 dwp Fail testAGetEcodData once the ECOD source data uses extended PDB IDs
+#  26-Oct-2026 dwp Add test for ECOD source entry IDs (fails once ECOD uses extended PDB IDs)
 #
 ##
 """
@@ -74,12 +74,6 @@ class EcodClassificationProviderTests(unittest.TestCase):
                 fns = ecodP.getFamilyNames(pdbTup[0], pdbTup[1])
                 fRanges = ecodP.getFamilyResidueRanges(pdbTup[0], pdbTup[1])
                 logger.info("pdbTup %r %r - %r %r %r", pdbTup[0], pdbTup[1], fIds, fns, fRanges)
-            #
-            # Fails once ECOD switches to extended PDB IDs
-            badL = getNonShortEntryIds({pdbId for pdbId, _ in ecodP._EcodClassificationProvider__pdbD})  # pylint: disable=protected-access
-            self.assertEqual(badL, [], "ECOD source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % badL[:10])
-        except AssertionError:
-            raise
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
@@ -96,11 +90,24 @@ class EcodClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testEcodSourceEntryIds(self):
+        """Check that the ECOD source data still uses short (4-character) PDB IDs.
+
+        Reads the cache built from the source data by testAGetEcodData (which runs first), to avoid downloading the
+        large ECOD domain file twice.
+        """
+        ecodP = EcodClassificationProvider(cachePath=self.__cachePath, useCache=True)
+        self.assertTrue(ecodP.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        badL = getNonShortEntryIds({pdbId for pdbId, _ in ecodP._EcodClassificationProvider__pdbD})  # pylint: disable=protected-access
+        self.assertEqual(badL, [], "ECOD source data has entry IDs that aren't 4-char PDB IDs: %r" % badL[:10])
+
 
 def ecodProviderSuite():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(EcodClassificationProviderTests("testAGetEcodData"))
     suiteSelect.addTest(EcodClassificationProviderTests("testEcodTreeMethods"))
+    suiteSelect.addTest(EcodClassificationProviderTests("testEcodSourceEntryIds"))
     return suiteSelect
 
 

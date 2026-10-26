@@ -3,7 +3,7 @@
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
-#  26-Oct-2026 dwp Fail testGetScopData once the SCOPe source data uses extended PDB IDs
+#  26-Oct-2026 dwp Add test for SCOPe source entry IDs (fails once SCOPe uses extended PDB IDs)
 #
 ##
 """
@@ -68,12 +68,7 @@ class ScopClassificationProviderTests(unittest.TestCase):
                 domains = scu.getScopDomainNames(pdbTup[0], pdbTup[1])
                 ranges = scu.getScopResidueRanges(pdbTup[0], pdbTup[1])
                 logger.debug("pdbId %r authAsymId %r sunids %r domains %r ranges %r", pdbTup[0], pdbTup[1], sunids, domains, ranges)
-            #
-            # Fails once SCOPe switches to extended PDB IDs
-            badL = getNonShortEntryIds({pdbId for pdbId, _ in scu._ScopClassificationProvider__pdbD})  # pylint: disable=protected-access
-            self.assertEqual(badL, [], "SCOPe source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % badL[:10])
-        except AssertionError:
-            raise
+
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()
@@ -90,11 +85,20 @@ class ScopClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testScopSourceEntryIds(self):
+        """Check that the SCOPe source data still uses short (4-character) PDB IDs"""
+        scu = ScopClassificationProvider(cachePath=self.__cachePath, useCache=False)
+        self.assertTrue(scu.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        badL = getNonShortEntryIds({pdbId for pdbId, _ in scu._ScopClassificationProvider__pdbD})  # pylint: disable=protected-access
+        self.assertEqual(badL, [], "SCOPe source data has entry IDs that aren't 4-char PDB IDs: %r" % badL[:10])
+
 
 def readScopData():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(ScopClassificationProviderTests("testGetScopData"))
     suiteSelect.addTest(ScopClassificationProviderTests("testScopClassificationAccessMethods"))
+    suiteSelect.addTest(ScopClassificationProviderTests("testScopSourceEntryIds"))
     return suiteSelect
 
 

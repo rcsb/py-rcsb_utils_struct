@@ -3,7 +3,7 @@
 # Date:    23-Jun-2021  JDW
 #
 # Updates:
-#  26-Oct-2026 dwp Fail testAGetScop2Data once the SCOP2 or SCOP2B source data uses extended PDB IDs
+#  26-Oct-2026 dwp Add test for SCOP2 and SCOP2B source entry IDs (fails once either uses extended PDB IDs)
 #
 ##
 """
@@ -91,13 +91,6 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
                 # Check for duplicate data items
                 self.assertTrue(len(fRanges) == len(set(fRanges)))
                 self.assertTrue(len(sfRanges) == len(set(sfRanges)))
-            #
-            # Fails once SCOP2 (family/superfamily file) or SIFTS (SCOP2B file) switches to extended PDB IDs
-            for ky in ["fD", "sfD", "sf2bD"]:
-                badL = getNonShortEntryIds({pdbId for pdbId, _ in getattr(scp, "_Scop2ClassificationProvider__" + ky)})
-                self.assertEqual(badL, [], "SCOP2 (%s) source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % (ky, badL[:10]))
-        except AssertionError:
-            raise
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
@@ -176,6 +169,15 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testScop2SourceEntryIds(self):
+        """Check that the SCOP2 (family/superfamily) and SIFTS SCOP2B source data still use short (4-character) PDB IDs"""
+        scp = Scop2ClassificationProvider(cachePath=self.__cachePath, useCache=False)
+        self.assertTrue(scp.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        for ky in ["fD", "sfD", "sf2bD"]:
+            badL = getNonShortEntryIds({pdbId for pdbId, _ in getattr(scp, "_Scop2ClassificationProvider__" + ky)})
+            self.assertEqual(badL, [], "SCOP2 (%s) source data has entry IDs that aren't 4-char PDB IDs: %r" % (ky, badL[:10]))
+
 
 def scop2ProviderSuite():
     suiteSelect = unittest.TestSuite()
@@ -183,6 +185,7 @@ def scop2ProviderSuite():
     suiteSelect.addTest(Scop2ClassificationProviderTests("testGetScop2BData"))
     suiteSelect.addTest(Scop2ClassificationProviderTests("testGetScop2FallbackData"))
     suiteSelect.addTest(Scop2ClassificationProviderTests("testScop2TreeMethods"))
+    suiteSelect.addTest(Scop2ClassificationProviderTests("testScop2SourceEntryIds"))
     return suiteSelect
 
 

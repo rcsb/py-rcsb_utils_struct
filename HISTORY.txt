@@ -45,5 +45,5 @@
  28-Jan-2026    V0.52 Update CathClassificationProvider source URL to use HTTPS
  18-Mar-2026    V0.53 Re-work provider to handle new data format and improve robustness
  26-Oct-2026    V0.54 Handle short or extended PDB IDs in CATH, SCOPe, SCOP2 and entry info assignment keys and lookups;
-                     key SCOP2 assignments by lower case entry ID; fail the source data tests once CATH, SCOPe, ECOD,
-                     SCOP2 or SCOP2B use extended PDB IDs
+                     key SCOP2 assignments by lower case entry ID; add per-provider tests that fail once the CATH,
+                     SCOPe, ECOD, SCOP2 or SCOP2B source data use extended PDB IDs
