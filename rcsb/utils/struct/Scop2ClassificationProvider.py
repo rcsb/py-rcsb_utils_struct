@@ -10,6 +10,8 @@
 #   23-Apr-2024 dwp SCOP2/SCOP2B website was shut down--turn off fetching of source data until/if new site is made available again
 #    9-May-2024 dwp Adjust reload process to not re-download fallback data upon every instantiation
 #   10-Jun-2024 dwp Update SCOP2 source to new website; restructure data reloading/building steps
+#   26-Oct-2026 dwp Key and look up SCOP2/SCOP2B assignments by lower case entry ID (as in the other classification
+#                   providers), normalizing older caches and fallback data on load, to handle short or extended PDB IDs
 ##
 """
   Extract SCOP2 domain assignments, term descriptions and SCOP2 classification hierarchy
@@ -72,28 +74,28 @@ class Scop2ClassificationProvider(StashableBase):
 
     def getFamilyIds(self, pdbId, authAsymId):
         try:
-            return list(set([tup[1] for tup in self.__fD[(pdbId.upper(), authAsymId)]]))
+            return list(set([tup[1] for tup in self.__fD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyIds(self, pdbId, authAsymId):
         try:
-            return list(set([tup[1] for tup in self.__sfD[(pdbId.upper(), authAsymId)]]))
+            return list(set([tup[1] for tup in self.__sfD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getFamilyNames(self, pdbId, authAsymId):
         try:
-            return list(set([self.__nD[tup[1]] for tup in self.__fD[(pdbId.upper(), authAsymId)]]))
+            return list(set([self.__nD[tup[1]] for tup in self.__fD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyNames(self, pdbId, authAsymId):
         try:
-            return list(set([self.__nD[tup[1]] for tup in self.__sfD[(pdbId.upper(), authAsymId)]]))
+            return list(set([self.__nD[tup[1]] for tup in self.__sfD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
@@ -101,35 +103,35 @@ class Scop2ClassificationProvider(StashableBase):
     def getFamilyResidueRanges(self, pdbId, authAsymId):
         try:
             # s/fD.setdefault((pdbId, authAsymId), []).append((domSuperFamilyId, authAsymId, authSeqBeg, authSeqEnd))
-            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__fD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__fD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyResidueRanges(self, pdbId, authAsymId):
         try:
-            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sfD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sfD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyNames2B(self, pdbId, authAsymId):
         try:
-            return list(set([self.__nD[tup[1]] for tup in self.__sf2bD[(pdbId.upper(), authAsymId)]]))
+            return list(set([self.__nD[tup[1]] for tup in self.__sf2bD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyIds2B(self, pdbId, authAsymId):
         try:
-            return list(set([tup[1] for tup in self.__sf2bD[(pdbId.upper(), authAsymId)]]))
+            return list(set([tup[1] for tup in self.__sf2bD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
 
     def getSuperFamilyResidueRanges2B(self, pdbId, authAsymId):
         try:
-            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sf2bD[(pdbId.upper(), authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3], tup[4]) for tup in self.__sf2bD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
         return []
@@ -206,9 +208,8 @@ class Scop2ClassificationProvider(StashableBase):
         pAD = sD["parentsType"]
         pBD = sD["parentsClass"]
         pBRootD = sD["parentsClassRoot"]
-        fD = sD["families"]
-        sfD = sD["superfamilies"]
-        sf2bD = sD["superfamilies2b"]
+        # Caches and fallback data built before V0.54 key assignments by upper case entry ID
+        fD, sfD, sf2bD = [{(pdbId.lower(), authAsymId): v for (pdbId, authAsymId), v in sD[ky].items()} for ky in ["families", "superfamilies", "superfamilies2b"]]
 
         return nD, ntD, pAD, pBD, pBRootD, fD, sfD, sf2bD
 
@@ -412,7 +413,7 @@ class Scop2ClassificationProvider(StashableBase):
                 ntD[tD["CL"]] = "CL"
                 ntD[tD["TP"]] = "TP"
                 #
-                pdbId = ff[1]
+                pdbId = ff[1].lower()
                 authAsymId, authSeqBeg, authSeqEnd = self.__parseAssignment(ff[2])
                 if authAsymId is not None:
                     fKey = (pdbId, authAsymId)
@@ -421,7 +422,7 @@ class Scop2ClassificationProvider(StashableBase):
                         fD[fKey] = []
                     if fTup not in fD[fKey]:
                         fD[fKey].append(fTup)
-                pdbId = ff[6]
+                pdbId = ff[6].lower()
                 authAsymId, authSeqBeg, authSeqEnd = self.__parseAssignment(ff[7])
                 if authAsymId is not None:
                     sfKey = (pdbId, authAsymId)
@@ -477,7 +478,7 @@ class Scop2ClassificationProvider(StashableBase):
         try:
             for rowD in scop2bL:
                 if rowD["SF_DOMID"] in domToSfD:
-                    sfD.setdefault((rowD["PDB"].upper(), rowD["CHAIN"]), []).append((rowD["SF_DOMID"], domToSfD[rowD["SF_DOMID"]], rowD["CHAIN"], rowD["PDB_BEG"], rowD["PDB_END"]))
+                    sfD.setdefault((rowD["PDB"].lower(), rowD["CHAIN"]), []).append((rowD["SF_DOMID"], domToSfD[rowD["SF_DOMID"]], rowD["CHAIN"], rowD["PDB_BEG"], rowD["PDB_END"]))
                 else:
                     logger.warning("Missing SCOP2B SF ID mapping for %r", rowD["SF_DOMID"])
         except Exception as e:

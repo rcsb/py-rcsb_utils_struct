@@ -3,6 +3,7 @@
 #  Date:           22-Sep-2021 jdw
 #
 #  Updated:
+#  26-Oct-2026 dwp Look up entry IDs as given, then in upper or lower case, to handle short or extended PDB IDs
 #
 ##
 """
@@ -53,7 +54,11 @@ class EntryInfoProvider(StashableBase):
             (dict): of entry-level annotations
         """
         try:
-            return self.__entryInfoD["entryInfo"][entryId.upper()] if entryId.upper() in self.__entryInfoD["entryInfo"] else {}
+            # Keys are entry IDs as loaded (upper case short PDB IDs, lower case extended PDB IDs)
+            eiD = self.__entryInfoD["entryInfo"]
+            for eId in [entryId, entryId.upper(), entryId.lower()]:
+                if eId in eiD:
+                    return eiD[eId]
         except Exception as e:
             logger.error("Failing with %r", str(e))
         return {}

@@ -6,6 +6,7 @@
 #   15-Jul-2021 jdw Update the constructor to common provider API conventions
 #   18-Jul-2023 dwp Resolve duplication issues with CATH residue range list
 #   28-Jan-2026 dwp Switch to HTTPS
+#   26-Oct-2026 dwp Get the entry ID from short or extended PDB ID domain IDs, and look up entry IDs in lower case
 ##
 """
   Extract CATH domain assignments, term descriptions and CATH classification hierarchy
@@ -66,7 +67,7 @@ class CathClassificationProvider(StashableBase):
     def getCathVersions(self, pdbId, authAsymId):
         """aD[(pdbId, authAsymId)] = [(cathId, domainId, (authAsymId, resBeg, resEnd), version)]"""
         try:
-            return list(set([tup[3] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[3] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -74,7 +75,7 @@ class CathClassificationProvider(StashableBase):
 
     def getCathIds(self, pdbId, authAsymId):
         try:
-            return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[0] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -82,7 +83,7 @@ class CathClassificationProvider(StashableBase):
 
     def getCathDomainNames(self, pdbId, authAsymId):
         try:
-            return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[1] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -90,7 +91,7 @@ class CathClassificationProvider(StashableBase):
 
     def getCathResidueRanges(self, pdbId, authAsymId):
         try:
-            return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
+            return [(tup[0], tup[1], tup[2][0], tup[2][1], tup[2][2]) for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -294,7 +295,7 @@ class CathClassificationProvider(StashableBase):
         """
         pdbD = {}
         for domId, dTup in dD.items():
-            pdbId = domId[:4]
+            pdbId = self.__getEntryIdFromDomainId(domId)
             for rTup in dTup[1]:
                 cKey = (pdbId, rTup[0])
                 cTup = (dTup[0], domId, rTup, dTup[2])
@@ -303,6 +304,13 @@ class CathClassificationProvider(StashableBase):
                 if cTup not in pdbD[cKey]:
                     pdbD[cKey].append(cTup)
         return pdbD
+
+    @staticmethod
+    def __getEntryIdFromDomainId(domId):
+        """Return the lower case entry ID from a CATH domain ID (<entryId><chain code><2-digit domain number>),
+        for short or extended PDB IDs (e.g., '101mA00' -> '101m', 'pdb_0000101mA00' -> 'pdb_0000101m').
+        """
+        return domId[:12].lower() if domId.lower().startswith("pdb_") else domId[:4].lower()
 
     def __exportTreeNodeList(self, nD):
         """Create node list from name dictionary and lineage dictionaries."""

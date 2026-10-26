@@ -3,6 +3,8 @@
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Add test for getting entry IDs from short or extended PDB ID domain IDs, and fail testGetCathData
+#                  once the CATH source data uses extended PDB IDs
 #
 ##
 """
@@ -27,6 +29,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(mo
 logger = logging.getLogger()
 
 
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
+
+
 class CathClassificationProviderTests(unittest.TestCase):
     def setUp(self):
         self.__workPath = os.path.join(HERE, "test-output")
@@ -39,6 +46,12 @@ class CathClassificationProviderTests(unittest.TestCase):
     def tearDown(self):
         endTime = time.time()
         logger.debug("Completed %s at %s (%.4f seconds)", self.id(), time.strftime("%Y %m %d %H:%M:%S", time.localtime()), endTime - self.__startTime)
+
+    def testEntryIdFromDomainId(self):
+        """Get the lower case entry ID from short or extended PDB ID domain IDs (no data download)"""
+        getEntryId = CathClassificationProvider._CathClassificationProvider__getEntryIdFromDomainId  # pylint: disable=protected-access
+        for domId, entryId in [("101mA00", "101m"), ("10GSA01", "10gs"), ("1abc000", "1abc"), ("pdb_0000101mA00", "pdb_0000101m"), ("PDB_00001ABCB02", "pdb_00001abc")]:
+            self.assertEqual(getEntryId(domId), entryId)
 
     # @unittest.skipIf(True, "Service temporarily down")
     def testGetCathData(self):
@@ -68,6 +81,14 @@ class CathClassificationProviderTests(unittest.TestCase):
                 logger.info("pdbId %r authAsymId %r cathids %r domains %r ranges %r versions %r", pdbTup[0], pdbTup[1], cathids, domains, ranges, versions)
                 # Check for duplicate data items
                 self.assertTrue(len(ranges) == len(set(ranges)))
+            #
+            # Fails once CATH switches to extended PDB IDs (also checks the domain ID length, <entryId><chain code><2-digit domain number>)
+            pdbD = ccu._CathClassificationProvider__pdbD  # pylint: disable=protected-access
+            badL = getNonShortEntryIds({pdbId for pdbId, _ in pdbD})
+            badL += sorted({tup[1] for tupL in pdbD.values() for tup in tupL if len(tup[1]) != 7})
+            self.assertEqual(badL, [], "CATH source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % badL[:10])
+        except AssertionError:
+            raise
 
             #
         except Exception as e:
@@ -90,6 +111,7 @@ class CathClassificationProviderTests(unittest.TestCase):
 
 def readCathData():
     suiteSelect = unittest.TestSuite()
+    suiteSelect.addTest(CathClassificationProviderTests("testEntryIdFromDomainId"))
     suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
     suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
     return suiteSelect

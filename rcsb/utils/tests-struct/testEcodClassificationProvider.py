@@ -3,6 +3,7 @@
 # Date:    23-Jun-2021  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Fail testAGetEcodData once the ECOD source data uses extended PDB IDs
 #
 ##
 """
@@ -24,6 +25,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class EcodClassificationProviderTests(unittest.TestCase):
@@ -68,6 +74,12 @@ class EcodClassificationProviderTests(unittest.TestCase):
                 fns = ecodP.getFamilyNames(pdbTup[0], pdbTup[1])
                 fRanges = ecodP.getFamilyResidueRanges(pdbTup[0], pdbTup[1])
                 logger.info("pdbTup %r %r - %r %r %r", pdbTup[0], pdbTup[1], fIds, fns, fRanges)
+            #
+            # Fails once ECOD switches to extended PDB IDs
+            badL = getNonShortEntryIds({pdbId for pdbId, _ in ecodP._EcodClassificationProvider__pdbD})  # pylint: disable=protected-access
+            self.assertEqual(badL, [], "ECOD source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % badL[:10])
+        except AssertionError:
+            raise
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()

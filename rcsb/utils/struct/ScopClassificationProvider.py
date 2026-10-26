@@ -5,6 +5,7 @@
 #  Updated:
 #  24-Apr-2019  jdw Exclude the root node from the exported tree node list
 #   6-Jan-2026  dwp Change base URL to Zenodo (temporary downtime at scop.berkeley.edu)
+#  26-Oct-2026  dwp Key and look up assignments by lower case entry ID, to handle short or extended PDB IDs
 ##
 """
   Extract SCOPe assignments, term descriptions and SCOP classifications
@@ -91,7 +92,7 @@ class ScopClassificationProvider(StashableBase):
         aD[(pdbId, authAsymId)] = [(domSunId, domainId, sccs, (authAsymId, resBeg, resEnd))]
         """
         try:
-            return list(set([tup[0] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[0] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -99,7 +100,7 @@ class ScopClassificationProvider(StashableBase):
 
     def getScopDomainNames(self, pdbId, authAsymId):
         try:
-            return list(set([tup[1] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[1] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -107,7 +108,7 @@ class ScopClassificationProvider(StashableBase):
 
     def getScopSccsNames(self, pdbId, authAsymId):
         try:
-            return list(set([tup[2] for tup in self.__pdbD[(pdbId, authAsymId)]]))
+            return list(set([tup[2] for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]))
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -115,7 +116,7 @@ class ScopClassificationProvider(StashableBase):
 
     def getScopResidueRanges(self, pdbId, authAsymId):
         try:
-            return [(tup[0], tup[1], tup[2], tup[3][0], tup[3][1], tup[3][2]) for tup in self.__pdbD[(pdbId, authAsymId)]]
+            return [(tup[0], tup[1], tup[2], tup[3][0], tup[3][1], tup[3][2]) for tup in self.__pdbD[(pdbId.lower(), authAsymId)]]
         except Exception as e:
             logger.debug("Failing for %r %r with %s", pdbId, authAsymId, str(e))
 
@@ -330,7 +331,7 @@ class ScopClassificationProvider(StashableBase):
         pdbD = {}
         for _, dTup in dmD.items():
             for rTup in dTup[1]:
-                pdbD.setdefault((dTup[0], rTup[0]), []).append((dTup[4], dTup[2], dTup[3], rTup))
+                pdbD.setdefault((str(dTup[0]).lower(), rTup[0]), []).append((dTup[4], dTup[2], dTup[3], rTup))
         return pdbD
 
     def __extractHierarchy(self, hieL, nD):

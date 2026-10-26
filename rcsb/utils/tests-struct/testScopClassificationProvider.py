@@ -3,6 +3,7 @@
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Fail testGetScopData once the SCOPe source data uses extended PDB IDs
 #
 ##
 """
@@ -25,6 +26,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class ScopClassificationProviderTests(unittest.TestCase):
@@ -62,7 +68,12 @@ class ScopClassificationProviderTests(unittest.TestCase):
                 domains = scu.getScopDomainNames(pdbTup[0], pdbTup[1])
                 ranges = scu.getScopResidueRanges(pdbTup[0], pdbTup[1])
                 logger.debug("pdbId %r authAsymId %r sunids %r domains %r ranges %r", pdbTup[0], pdbTup[1], sunids, domains, ranges)
-
+            #
+            # Fails once SCOPe switches to extended PDB IDs
+            badL = getNonShortEntryIds({pdbId for pdbId, _ in scu._ScopClassificationProvider__pdbD})  # pylint: disable=protected-access
+            self.assertEqual(badL, [], "SCOPe source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % badL[:10])
+        except AssertionError:
+            raise
         except Exception as e:
             logger.exception("Failing with %s", str(e))
             self.fail()

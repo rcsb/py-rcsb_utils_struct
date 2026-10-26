@@ -3,6 +3,7 @@
 # Date:    23-Jun-2021  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Fail testAGetScop2Data once the SCOP2 or SCOP2B source data uses extended PDB IDs
 #
 ##
 """
@@ -25,6 +26,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class Scop2ClassificationProviderTests(unittest.TestCase):
@@ -85,6 +91,13 @@ class Scop2ClassificationProviderTests(unittest.TestCase):
                 # Check for duplicate data items
                 self.assertTrue(len(fRanges) == len(set(fRanges)))
                 self.assertTrue(len(sfRanges) == len(set(sfRanges)))
+            #
+            # Fails once SCOP2 (family/superfamily file) or SIFTS (SCOP2B file) switches to extended PDB IDs
+            for ky in ["fD", "sfD", "sf2bD"]:
+                badL = getNonShortEntryIds({pdbId for pdbId, _ in getattr(scp, "_Scop2ClassificationProvider__" + ky)})
+                self.assertEqual(badL, [], "SCOP2 (%s) source data has entry IDs that aren't 4-char PDB IDs (update struct and dictionary for extended IDs): %r" % (ky, badL[:10]))
+        except AssertionError:
+            raise
 
         except Exception as e:
             logger.exception("Failing with %s", str(e))
