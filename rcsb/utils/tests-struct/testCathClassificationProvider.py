@@ -3,6 +3,8 @@
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Add tests for CATH source entry IDs (fails once CATH uses extended PDB IDs) and for getting
+#                  entry IDs from short or extended PDB ID domain IDs
 #
 ##
 """
@@ -25,6 +27,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class CathClassificationProviderTests(unittest.TestCase):
@@ -87,11 +94,30 @@ class CathClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testCathSourceEntryIds(self):
+        """Check that the CATH source data still uses short (4-character) PDB IDs"""
+        ccu = CathClassificationProvider(cachePath=self.__cachePath, useCache=False)
+        self.assertTrue(ccu.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        # (also checks the domain ID length, <entryId><chain code><2-digit domain number>, since the entry ID is taken from it)
+        pdbD = ccu._CathClassificationProvider__pdbD  # pylint: disable=protected-access
+        badL = getNonShortEntryIds({pdbId for pdbId, _ in pdbD})
+        badL += sorted({tup[1] for tupL in pdbD.values() for tup in tupL if len(tup[1]) != 7})
+        self.assertEqual(badL, [], "CATH source data has entry IDs that aren't 4-char PDB IDs: %r" % badL[:10])
+
+    def testEntryIdFromDomainId(self):
+        """Get the lower case entry ID from short or extended PDB ID domain IDs (no data download)"""
+        getEntryId = CathClassificationProvider._CathClassificationProvider__getEntryIdFromDomainId  # pylint: disable=protected-access
+        for domId, entryId in [("101mA00", "101m"), ("10GSA01", "10gs"), ("1abc000", "1abc"), ("pdb_0000101mA00", "pdb_0000101m"), ("PDB_00001ABCB02", "pdb_00001abc")]:
+            self.assertEqual(getEntryId(domId), entryId)
+
 
 def readCathData():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(CathClassificationProviderTests("testGetCathData"))
     suiteSelect.addTest(CathClassificationProviderTests("testCathClassificationAccessMethods"))
+    suiteSelect.addTest(CathClassificationProviderTests("testCathSourceEntryIds"))
+    suiteSelect.addTest(CathClassificationProviderTests("testEntryIdFromDomainId"))
     return suiteSelect
 
 

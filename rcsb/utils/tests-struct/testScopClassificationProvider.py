@@ -3,6 +3,7 @@
 # Date:    3-Apr-2019  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Add test for SCOPe source entry IDs (fails once SCOPe uses extended PDB IDs)
 #
 ##
 """
@@ -25,6 +26,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class ScopClassificationProviderTests(unittest.TestCase):
@@ -79,11 +85,20 @@ class ScopClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testScopSourceEntryIds(self):
+        """Check that the SCOPe source data still uses short (4-character) PDB IDs"""
+        scu = ScopClassificationProvider(cachePath=self.__cachePath, useCache=False)
+        self.assertTrue(scu.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        badL = getNonShortEntryIds({pdbId for pdbId, _ in scu._ScopClassificationProvider__pdbD})  # pylint: disable=protected-access
+        self.assertEqual(badL, [], "SCOPe source data has entry IDs that aren't 4-char PDB IDs: %r" % badL[:10])
+
 
 def readScopData():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(ScopClassificationProviderTests("testGetScopData"))
     suiteSelect.addTest(ScopClassificationProviderTests("testScopClassificationAccessMethods"))
+    suiteSelect.addTest(ScopClassificationProviderTests("testScopSourceEntryIds"))
     return suiteSelect
 
 

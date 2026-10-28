@@ -3,6 +3,7 @@
 # Date:    23-Jun-2021  JDW
 #
 # Updates:
+#  26-Oct-2026 dwp Add test for ECOD source entry IDs (fails once ECOD uses extended PDB IDs)
 #
 ##
 """
@@ -24,6 +25,11 @@ TOPDIR = os.path.dirname(os.path.dirname(HERE))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]-%(module)s.%(funcName)s: %(message)s")
 logger = logging.getLogger()
+
+
+def getNonShortEntryIds(entryIds):
+    """Return the entry IDs that aren't short (4-character) PDB IDs, e.g. extended (12-character) PDB IDs."""
+    return sorted({eId for eId in entryIds if len(eId) != 4})
 
 
 class EcodClassificationProviderTests(unittest.TestCase):
@@ -84,11 +90,24 @@ class EcodClassificationProviderTests(unittest.TestCase):
             logger.exception("Failing with %s", str(e))
             self.fail()
 
+    def testEcodSourceEntryIds(self):
+        """Check that the ECOD source data still uses short (4-character) PDB IDs.
+
+        Reads the cache built from the source data by testAGetEcodData (which runs first), to avoid downloading the
+        large ECOD domain file twice.
+        """
+        ecodP = EcodClassificationProvider(cachePath=self.__cachePath, useCache=True)
+        self.assertTrue(ecodP.testCache())
+        # Fails once the source data uses extended PDB IDs; then update this package and rcsb.utils.dictionary for them
+        badL = getNonShortEntryIds({pdbId for pdbId, _ in ecodP._EcodClassificationProvider__pdbD})  # pylint: disable=protected-access
+        self.assertEqual(badL, [], "ECOD source data has entry IDs that aren't 4-char PDB IDs: %r" % badL[:10])
+
 
 def ecodProviderSuite():
     suiteSelect = unittest.TestSuite()
     suiteSelect.addTest(EcodClassificationProviderTests("testAGetEcodData"))
     suiteSelect.addTest(EcodClassificationProviderTests("testEcodTreeMethods"))
+    suiteSelect.addTest(EcodClassificationProviderTests("testEcodSourceEntryIds"))
     return suiteSelect
 
 
